@@ -15,8 +15,6 @@ jobs:
         include:
           - dockerfile: files/docker/Dockerfile.worker
             image: hardly-worker
-          - dockerfile: files/docker/Dockerfile.tests
-            image: hardly-worker-tests
 
     steps:
       - uses: actions/checkout@v2

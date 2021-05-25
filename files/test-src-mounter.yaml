@@ -11,7 +11,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: packit-tests
-      image: quay.io/packit/hardly-worker-tests:stg
+      image: hardly-worker-tests
       volumeMounts:
         - mountPath: /src
           name: test-src-pv

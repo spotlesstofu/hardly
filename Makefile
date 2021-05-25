@@ -1,6 +1,6 @@
 BASE_IMAGE ?= quay.io/packit/base
 WORKER_IMAGE ?= quay.io/packit/hardly-worker:dev
-TEST_IMAGE ?= quay.io/packit/hardly-worker-tests:stg
+TEST_IMAGE ?= hardly-worker-tests
 TEST_TARGET ?= ./tests/unit ./tests/integration/
 CONTAINER_ENGINE ?= $(shell command -v podman 2> /dev/null || echo docker)
 ANSIBLE_PYTHON ?= /usr/bin/python3
@@ -23,7 +23,7 @@ test_image: files/install-deps.yaml files/recipe-tests.yaml
 check_in_container:
 	@# don't use -ti here in CI, TTY is not allocated in zuul
 	echo $(SOURCE_BRANCH)
-	$(CONTAINER_ENGINE) run --rm --pull=always \
+	$(CONTAINER_ENGINE) run --rm \
 		--env COV_REPORT \
 		--env TEST_TARGET \
 		--env COLOR \
