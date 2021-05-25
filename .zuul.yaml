@@ -1,0 +1,10 @@
+---
+# Entrypoint for Zuul
+- project:
+    check:
+      jobs:
+        - pre-commit
+    gate:
+      jobs:
+        - pre-commit
+

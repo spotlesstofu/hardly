@@ -1,0 +1,5 @@
+[user]
+    name = Source-git worker
+    email = user-cont-team+packit-service@redhat.com
+[push]
+    default = current

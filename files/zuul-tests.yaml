@@ -1,0 +1,21 @@
+---
+# This playbook is running tests inside Zuul
+- name: Run hardly-worker tests
+  hosts: all
+  vars:
+    # Zuul base job redefines project_dir
+    project_dir: "{{ playbook_dir }}/.."
+  tasks:
+    - name: Install podman
+      dnf:
+        name:
+          - podman
+        state: present
+      become: true
+    - name: Run tests within a container
+      command: "make check_in_container"
+      args:
+        chdir: "{{ project_dir }}"
+      environment:
+        COLOR: "no"
+        SOURCE_BRANCH: "{{ zuul.branch }}"

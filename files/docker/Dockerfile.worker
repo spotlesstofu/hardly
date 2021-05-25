@@ -1,0 +1,36 @@
+# Celery worker which runs tasks (packit) from the web service
+
+FROM quay.io/packit/base
+
+ARG SOURCE_BRANCH
+RUN  if [[ -z $SOURCE_BRANCH ]]; then \
+echo -e "\nMissing SOURCE_BRANCH build argument! Please add \
+\"--build-arg SOURCE_BRANCH=<val>\" to the build command to specify it!\n\
+This is the branch used when installing other Packit projects (e.g. ogr, packit).\n" && exit 1;\
+fi
+
+ENV USER=packit \
+    HOME=/home/packit
+
+# Ansible doesn't like /tmp
+WORKDIR /src
+
+COPY files/ ./files/
+RUN ansible-playbook -vv -c local -i localhost, files/install-deps.yaml \
+    && dnf clean all
+
+# TODO: Uncomment when added code
+#COPY setup.py setup.cfg .git_archival.txt .gitattributes ./
+# setuptools-scm
+COPY .git ./.git
+
+# TODO: Uncomment when added code
+# COPY source_git_worker/ ./source_git_worker/
+
+RUN git rev-parse HEAD >/.hardly-worker.git.commit.hash \
+    && git show --quiet --format=%B HEAD >/.hardly-worker.git.commit.message \
+    && ansible-playbook -vv -c local -i localhost, files/recipe-worker.yaml
+
+COPY . ./
+
+CMD ["/usr/bin/run_worker.sh"]
