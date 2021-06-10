@@ -4,18 +4,17 @@
 
 repos:
   - repo: https://github.com/psf/black
-    rev: 21.5b1
+    rev: 21.5b2
     hooks:
       - id: black
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.16.0
+    rev: v2.19.3
     hooks:
       - id: pyupgrade
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v2.3.0
+    rev: v2.3.1
     hooks:
       - id: prettier
-        exclude: tests_requre/openshift_integration/test_data/
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.0.1
     hooks:
@@ -25,7 +24,6 @@ repos:
       - id: check-yaml
         exclude: zuul.d
       - id: detect-private-key
-        exclude: tests/conftest.py
       - id: detect-aws-credentials
         args:
           - --allow-missing-credentials
@@ -39,39 +37,14 @@ repos:
           - --max-line-length=100
           - --per-file-ignores=files/packit.wsgi:F401,E402
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v0.812
+    rev: v0.901
     hooks:
       - id: mypy
         args: [--no-strict-optional, --ignore-missing-imports]
   - repo: https://github.com/packit/pre-commit-hooks
-    rev: 8efb6416e04616b2263e75eebbee79c38d7057cb
+    rev: 169c6671b0175882f74acaf34ace2edf897dc375
     hooks:
       - id: check-rebase
         args:
           - git://github.com/packit/hardly.git
-        stages: [manual, push]
-  - repo: https://github.com/packit/requre
-    rev: 0.8.0
-    hooks:
-      - id: requre-purge
-        name: Requre response files cleanup
-        description: Replace the sensitive/time-based values in the requre response files
-        entry: >
-          requre-patch purge
-          --replaces 'requests.sessions%send:Date:str:Fri, 01 Nov 2019 13-36-03 GMT'
-          --replaces 'requests.sessions%send:ETag:str:W/"1e51b8e1c48787a433405211e9e0fe61"'
-          --replaces 'requests.sessions%send:X-Fedora-RequestID:str:XcFVKMi@EiqyqRlV7q32fgBBBkM'
-          --replaces 'requests.sessions%send:X-RateLimit-Remaining:str:4972'
-          --replaces 'requests.sessions%send:X-RateLimit-Reset:str:1572953901'
-          --replaces 'requests.sessions%send:X-GitHub-Request-Id:str:18FB:AA1A:99616C4:B8092CB:5CC15425'
-          --replaces 'requests.sessions%send:AppTime:str:D=4081'
-          --replaces 'requests.sessions%send:X-Fedora-AppServer:str:koji01.phx2.fedoraproject.org'
-          --replaces 'requests.sessions%send:X-Fedora-ProxyServer:str:proxy01.phx2.fedoraproject.org'
-          --replaces "requests.sessions%send:Content-Security-Policy:str:default-src 'self';script-src 'self' 'nonce-YqLDC0BS8d7iY8mKO7VtBbIne' https://apps.fedoraproject.org; style-src 'self' 'nonce-YqLDC0BS8d7iY8mKO7VtBbIne'; object-src 'none';base-uri 'self';img-src 'self' https:;"
-          --replaces "requests.sessions%_content:expires_at:str:2019-11-01T14:35:53Z"
-          --replaces "requests.sessions%send:elapsed:float:0.2"
-          --replaces "requests.sessions%_content:token:str:v1.1cd89d399b8c70f8b88e22cbdaa72abbe5e390db"
-        language: python
-        types: [yaml]
-        files: /tests_requre.*\.yaml$
         stages: [manual, push]

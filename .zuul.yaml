@@ -7,4 +7,3 @@
     gate:
       jobs:
         - pre-commit
-
