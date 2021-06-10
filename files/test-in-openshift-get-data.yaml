@@ -2,7 +2,7 @@
 kind: Template
 apiVersion: v1
 metadata:
-  name: hardly-worker-get-requre-data-template
+  name: hardly-get-requre-data-template
 objects:
   - kind: Pod
     apiVersion: v1
@@ -18,7 +18,7 @@ objects:
       restartPolicy: Never
       containers:
         - name: packit-tests
-          image: quay.io/packit/hardly-worker-tests:stg
+          image: quay.io/packit/hardly-tests:stg
           # If tag is latest, defaults to Always.
           # imagePullPolicy: Never # IfNotPresent
           workingDir: /src

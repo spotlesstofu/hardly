@@ -11,7 +11,7 @@ spec:
   restartPolicy: Never
   containers:
     - name: packit-tests
-      image: hardly-worker-tests
+      image: hardly-tests
       volumeMounts:
         - mountPath: /src
           name: test-src-pv

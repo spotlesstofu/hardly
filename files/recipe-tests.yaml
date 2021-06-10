@@ -1,5 +1,5 @@
 ---
-- name: This is a recipe for a container image where hardly-worker tests will run
+- name: This is a recipe for a container image where hardly tests will run
   hosts: all
   tasks:
     - name: Install test RPM dependencies

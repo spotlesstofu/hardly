@@ -1,5 +1,5 @@
 ---
-- name: This is a recipe for how to cook with hardly-worker
+- name: This is a recipe for how to cook with hardly
   hosts: all
   vars:
     home_path: "{{ lookup('env', 'HOME') }}"

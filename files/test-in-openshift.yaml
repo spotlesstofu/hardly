@@ -2,7 +2,7 @@
 kind: Template
 apiVersion: v1
 metadata:
-  name: hardly-worker-tests-template
+  name: hardly-tests-template
 objects:
   - apiVersion: batch/v1
     kind: Job
@@ -27,7 +27,7 @@ objects:
           restartPolicy: Never
           containers:
             - name: packit-tests
-              image: hardly-worker-tests
+              image: hardly-tests
               # If tag is latest, defaults to Always.
               # imagePullPolicy: Never # IfNotPresent
               workingDir: /src

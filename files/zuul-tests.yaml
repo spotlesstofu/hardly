@@ -1,6 +1,6 @@
 ---
 # This playbook is running tests inside Zuul
-- name: Run hardly-worker tests
+- name: Run hardly tests
   hosts: all
   vars:
     # Zuul base job redefines project_dir

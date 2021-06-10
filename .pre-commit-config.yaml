@@ -48,7 +48,7 @@ repos:
     hooks:
       - id: check-rebase
         args:
-          - git://github.com/packit/hardly-worker.git
+          - git://github.com/packit/hardly.git
         stages: [manual, push]
   - repo: https://github.com/packit/requre
     rev: 0.8.0

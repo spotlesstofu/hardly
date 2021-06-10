@@ -1,6 +1,6 @@
 BASE_IMAGE ?= quay.io/packit/base
-WORKER_IMAGE ?= quay.io/packit/hardly-worker:dev
-TEST_IMAGE ?= hardly-worker-tests
+WORKER_IMAGE ?= quay.io/packit/hardly:dev
+TEST_IMAGE ?= hardly-tests
 TEST_TARGET ?= ./tests/unit ./tests/integration/
 CONTAINER_ENGINE ?= $(shell command -v podman 2> /dev/null || echo docker)
 ANSIBLE_PYTHON ?= /usr/bin/python3
@@ -15,7 +15,7 @@ worker: files/install-deps.yaml files/recipe-worker.yaml
 
 check:
 	find . -name "*.pyc" -exec rm {} \;
-	PYTHONPATH=$(CURDIR) PYTHONDONTWRITEBYTECODE=1 python3 -m pytest --color=$(COLOR) --verbose --showlocals --cov=hardly_worker --cov-report=$(COV_REPORT) $(TEST_TARGET)
+	PYTHONPATH=$(CURDIR) PYTHONDONTWRITEBYTECODE=1 python3 -m pytest --color=$(COLOR) --verbose --showlocals --cov=hardly --cov-report=$(COV_REPORT) $(TEST_TARGET)
 
 test_image: files/install-deps.yaml files/recipe-tests.yaml
 	$(CONTAINER_ENGINE) build --rm -t $(TEST_IMAGE) -f files/docker/Dockerfile.tests --build-arg SOURCE_BRANCH=$(SOURCE_BRANCH) .

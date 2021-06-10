@@ -25,10 +25,10 @@ RUN ansible-playbook -vv -c local -i localhost, files/install-deps.yaml \
 COPY .git ./.git
 
 # TODO: Uncomment when added code
-#COPY hardly_worker/ ./hardly_worker/
+#COPY hardly/ ./hardly/
 
-RUN git rev-parse HEAD >/.hardly-worker.git.commit.hash \
-    && git show --quiet --format=%B HEAD >/.hardly-worker.git.commit.message \
+RUN git rev-parse HEAD >/.hardly.git.commit.hash \
+    && git show --quiet --format=%B HEAD >/.hardly.git.commit.message \
     && ansible-playbook -vv -c local -i localhost, files/recipe-worker.yaml
 
 COPY . ./
