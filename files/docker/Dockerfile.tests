@@ -1,4 +1,7 @@
-# For running tests locally, see check_in_container target in Makefile
+# Copyright Contributors to the Packit project.
+# SPDX-License-Identifier: MIT
+
+# For running tests locally, see check-in-container target in Makefile
 
 FROM quay.io/packit/base
 
