@@ -1,8 +1,13 @@
 ---
-- name: This is a recipe for how to cook with hardly
+- name: Prepare worker
   hosts: all
   vars:
     home_path: "{{ lookup('env', 'HOME') }}"
     packit_service_path: /src
   tasks:
     - import_tasks: tasks/common.yaml
+    - name: Copy run_worker.sh
+      copy:
+        src: run_worker.sh
+        dest: /usr/bin/run_worker.sh
+        mode: 0777
