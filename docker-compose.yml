@@ -1,0 +1,82 @@
+version: "2"
+
+services:
+  redis:
+    image: quay.io/centos7/redis-5-centos7
+    container_name: redis
+    ports:
+      - 6379:6379
+    user: "123123"
+
+  postgres:
+    container_name: postgres
+    image: quay.io/centos7/postgresql-12-centos7
+    environment:
+      POSTGRESQL_USER: packit
+      POSTGRESQL_PASSWORD: secret-password
+      POSTGRESQL_DATABASE: packit
+    ports:
+      - 5432:5432
+
+  hardly:
+    container_name: hardly
+    build:
+      context: .
+      dockerfile: files/Containerfile
+      args:
+        SOURCE_BRANCH: main
+    image: quay.io/packit/hardly:dev
+    command: /usr/bin/run_worker.sh
+    depends_on:
+      - redis
+      - postgres
+    environment:
+      DEPLOYMENT: dev
+      REDIS_SERVICE_HOST: redis
+      APP: hardly.tasks
+      KRB5CCNAME: FILE:/tmp/krb5cc_packit
+      POSTGRESQL_USER: packit
+      POSTGRESQL_PASSWORD: secret-password
+      POSTGRESQL_HOST: postgres
+      POSTGRESQL_DATABASE: packit
+    volumes:
+      - ./hardly:/src/hardly:ro,z
+      - ../packit/packit:/usr/local/lib/python3.9/site-packages/packit:ro,z
+      - ../packit-service/packit_service:/usr/local/lib/python3.9/site-packages/packit_service:ro,z
+      # worker should not require packit-service.yaml
+      - ./secrets/stream/dev/packit-service.yaml:/home/packit/.config/packit-service.yaml:ro,z
+      - ./secrets/stream/dev/copr:/home/packit/.config/copr:ro,z
+      - ./secrets/stream/dev/ssh_config:/packit-ssh/config:ro,z
+      - ./secrets/stream/dev/id_rsa.pub:/packit-ssh/id_rsa.pub:ro,z
+      - ./secrets/stream/dev/id_rsa:/packit-ssh/id_rsa:ro,z
+      - ./secrets/stream/dev/fedora.keytab:/secrets/fedora.keytab:ro,z
+      - ./secrets/stream/dev/private-key.pem:/secrets/private-key.pem:ro,z
+    user: "123123"
+
+  service:
+    container_name: service
+    image: quay.io/packit/packit-service:dev
+    command: /usr/bin/run_httpd.sh
+    depends_on:
+      - redis
+      - postgres
+    ports:
+      - 8443:8443
+    environment:
+      DEPLOYMENT: dev
+      REDIS_SERVICE_HOST: redis
+      POSTGRESQL_USER: packit
+      POSTGRESQL_PASSWORD: secret-password
+      POSTGRESQL_HOST: postgres
+      POSTGRESQL_DATABASE: packit
+    volumes:
+      #      - ../packit-service/packit_service:/usr/local/lib/python3.9/site-packages/packit_service:ro,z
+      #      - ./files/packit-httpd.conf:/etc/httpd/conf.d/packit-httpd.conf:ro,z
+      # There's no secrets/ by default. You have to create (or symlink to other dir) it yourself.
+      # Make sure to set `command_handler: local` since there is no kube in d-c
+      - ./secrets/stream/dev/packit-service.yaml:/home/packit/.config/packit-service.yaml:ro,z
+      - ./secrets/stream/dev/fedora.keytab:/secrets/fedora.keytab:ro,z
+      - ./secrets/stream/dev/private-key.pem:/secrets/private-key.pem:ro,z
+      - ./secrets/stream/dev/fullchain.pem:/secrets/fullchain.pem:ro,z
+      - ./secrets/stream/dev/privkey.pem:/secrets/privkey.pem:ro,z
+    user: "123123"

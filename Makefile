@@ -1,8 +1,8 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
-BASE_IMAGE ?= quay.io/packit/base
-WORKER_IMAGE ?= quay.io/packit/hardly:dev
+BASE_IMAGE ?= quay.io/packit/packit-worker
+HARDLY_IMAGE ?= quay.io/packit/hardly:dev
 TEST_IMAGE ?= hardly-tests
 TEST_TARGET ?= ./tests/unit ./tests/integration/
 CONTAINER_ENGINE ?= $(shell command -v podman 2> /dev/null || echo docker)
@@ -12,16 +12,16 @@ COV_REPORT ?= term-missing
 COLOR ?= yes
 SOURCE_BRANCH ?= $(shell git branch --show-current)
 
-worker: files/install-deps.yaml files/recipe-worker.yaml
+hardly: files/recipe-hardly.yaml
 	$(CONTAINER_ENGINE) pull $(BASE_IMAGE)
-	$(CONTAINER_ENGINE) build --rm -t $(WORKER_IMAGE) -f files/docker/Dockerfile.worker --build-arg SOURCE_BRANCH=$(SOURCE_BRANCH) .
+	$(CONTAINER_ENGINE) build --rm -t $(HARDLY_IMAGE) -f files/Containerfile --build-arg SOURCE_BRANCH=$(SOURCE_BRANCH) .
 
 check:
 	find . -name "*.pyc" -exec rm {} \;
 	PYTHONPATH=$(CURDIR) PYTHONDONTWRITEBYTECODE=1 python3 -m pytest --color=$(COLOR) --verbose --showlocals --cov=hardly --cov-report=$(COV_REPORT) $(TEST_TARGET)
 
-build-test-image: files/install-deps.yaml files/recipe-tests.yaml
-	$(CONTAINER_ENGINE) build --rm -t $(TEST_IMAGE) -f files/docker/Dockerfile.tests --build-arg SOURCE_BRANCH=$(SOURCE_BRANCH) .
+build-test-image: files/recipe-tests.yaml
+	$(CONTAINER_ENGINE) build --rm -t $(TEST_IMAGE) -f files/Containerfile.tests --build-arg SOURCE_BRANCH=$(SOURCE_BRANCH) .
 
 check-in-container:
 	@# don't use -ti here in CI, TTY is not allocated in zuul
