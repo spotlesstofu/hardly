@@ -1,0 +1,3 @@
+---
+- name: Hardly prepare
+  hosts: all
