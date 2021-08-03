@@ -26,7 +26,7 @@ services:
       args:
         SOURCE_BRANCH: main
     image: quay.io/packit/hardly:dev
-    command: /usr/bin/run_worker.sh
+    command: run_worker.sh
     depends_on:
       - redis
       - postgres
@@ -55,8 +55,8 @@ services:
 
   service:
     container_name: service
-    image: quay.io/packit/packit-service:dev
-    command: /usr/bin/run_httpd.sh
+    image: quay.io/packit/packit-service
+    command: run_httpd.sh
     depends_on:
       - redis
       - postgres
