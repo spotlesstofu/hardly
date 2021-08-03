@@ -12,7 +12,7 @@ COV_REPORT ?= term-missing
 COLOR ?= yes
 SOURCE_BRANCH ?= $(shell git branch --show-current)
 
-hardly: files/recipe-hardly.yaml
+hardly: files/recipe-hardly.yaml files/install-deps.yaml
 	$(CONTAINER_ENGINE) pull $(BASE_IMAGE)
 	$(CONTAINER_ENGINE) build --rm -t $(HARDLY_IMAGE) -f files/Containerfile --build-arg SOURCE_BRANCH=$(SOURCE_BRANCH) .
 

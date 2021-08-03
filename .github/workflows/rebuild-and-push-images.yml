@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - dockerfile: files/docker/Dockerfile.worker
+          - dockerfile: files/Containerfile
             image: hardly
 
     steps:
