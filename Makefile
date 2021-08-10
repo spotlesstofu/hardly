@@ -22,7 +22,7 @@ check:
 	find . -name "*.pyc" -exec rm {} \;
 	PYTHONPATH=$(CURDIR) PYTHONDONTWRITEBYTECODE=1 python3 -m pytest --color=$(COLOR) --verbose --showlocals --cov=hardly --cov-report=$(COV_REPORT) $(TEST_TARGET)
 
-build-test-image: files/recipe-tests.yaml
+test-image: files/recipe-tests.yaml
 	$(CONTAINER_ENGINE) build --rm -t $(TEST_IMAGE) -f files/Containerfile.tests --build-arg SOURCE_BRANCH=$(SOURCE_BRANCH) .
 
 check-in-container:
