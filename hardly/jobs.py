@@ -3,8 +3,8 @@
 from logging import getLogger
 from typing import List
 
-from hardly.handlers import DistGitPRHandler
-from packit_service.worker.events import MergeRequestGitlabEvent
+from hardly.handlers import DistGitMRHandler
+from packit_service.worker.events import Event, MergeRequestGitlabEvent
 from packit_service.worker.handlers import JobHandler
 from packit_service.worker.jobs import SteveJobs
 from packit_service.worker.parser import Parser
@@ -14,6 +14,10 @@ logger = getLogger(__name__)
 
 
 class StreamJobs(SteveJobs):
+    def process_jobs(self, event: Event) -> List[TaskResults]:
+        return []  # For now, don't process default jobs, i.e. copr-build & tests
+        # return super().process_jobs(event)
+
     def process_message(
         self, event: dict, topic: str = None, source: str = None
     ) -> List[TaskResults]:
@@ -47,12 +51,11 @@ class StreamJobs(SteveJobs):
                 "Skipping private repository check!"
             )
 
-        # DistGitPRHandler handler is (for now) run even the job is not configured in a package.
+        # DistGitMRHandler handler is (for now) run even the job is not configured in a package.
         if isinstance(event_object, MergeRequestGitlabEvent):
-            DistGitPRHandler.get_signature(
+            DistGitMRHandler.get_signature(
                 event=event_object,
                 job=None,
             ).apply_async()
 
-        processing_results = self.process_jobs(event_object)
-        return processing_results
+        return self.process_jobs(event_object)

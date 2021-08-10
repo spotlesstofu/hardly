@@ -34,13 +34,16 @@ services:
       DEPLOYMENT: dev
       REDIS_SERVICE_HOST: redis
       APP: hardly.tasks
-      KRB5CCNAME: FILE:/tmp/krb5cc_packit
       POSTGRESQL_USER: packit
       POSTGRESQL_PASSWORD: secret-password
       POSTGRESQL_HOST: postgres
       POSTGRESQL_DATABASE: packit
+      DISTGIT_URL: https://gitlab.com/
+      DISTGIT_NAMESPACE: packit-service/rpms
+      CELERY_RETRY_LIMIT: 0
     volumes:
       - ./hardly:/src/hardly:ro,z
+      - ../ogr/ogr:/usr/local/lib/python3.9/site-packages/ogr:ro,z
       - ../packit/packit:/usr/local/lib/python3.9/site-packages/packit:ro,z
       - ../packit-service/packit_service:/usr/local/lib/python3.9/site-packages/packit_service:ro,z
       # worker should not require packit-service.yaml
@@ -49,7 +52,6 @@ services:
       - ./secrets/stream/dev/ssh_config:/packit-ssh/config:ro,z
       - ./secrets/stream/dev/id_rsa.pub:/packit-ssh/id_rsa.pub:ro,z
       - ./secrets/stream/dev/id_rsa:/packit-ssh/id_rsa:ro,z
-      - ./secrets/stream/dev/fedora.keytab:/secrets/fedora.keytab:ro,z
       - ./secrets/stream/dev/private-key.pem:/secrets/private-key.pem:ro,z
     user: "123123"
 
@@ -70,12 +72,13 @@ services:
       POSTGRESQL_HOST: postgres
       POSTGRESQL_DATABASE: packit
     volumes:
-      #      - ../packit-service/packit_service:/usr/local/lib/python3.9/site-packages/packit_service:ro,z
+      - ../ogr/ogr:/usr/local/lib/python3.9/site-packages/ogr:ro,z
+      - ../packit/packit:/usr/local/lib/python3.9/site-packages/packit:ro,z
+      - ../packit-service/packit_service:/usr/local/lib/python3.9/site-packages/packit_service:ro,z
       #      - ./files/packit-httpd.conf:/etc/httpd/conf.d/packit-httpd.conf:ro,z
       # There's no secrets/ by default. You have to create (or symlink to other dir) it yourself.
       # Make sure to set `command_handler: local` since there is no kube in d-c
       - ./secrets/stream/dev/packit-service.yaml:/home/packit/.config/packit-service.yaml:ro,z
-      - ./secrets/stream/dev/fedora.keytab:/secrets/fedora.keytab:ro,z
       - ./secrets/stream/dev/private-key.pem:/secrets/private-key.pem:ro,z
       - ./secrets/stream/dev/fullchain.pem:/secrets/fullchain.pem:ro,z
       - ./secrets/stream/dev/privkey.pem:/secrets/privkey.pem:ro,z

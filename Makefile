@@ -1,6 +1,8 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+.PHONY: hardly build-test-image
+
 BASE_IMAGE ?= quay.io/packit/packit-worker
 HARDLY_IMAGE ?= quay.io/packit/hardly:dev
 TEST_IMAGE ?= hardly-tests
