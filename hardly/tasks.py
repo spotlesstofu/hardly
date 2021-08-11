@@ -8,7 +8,7 @@ from typing import List
 from celery import Task
 
 from hardly.handlers.abstract import TaskName
-from hardly.handlers.distgit import DistGitPRHandler
+from hardly.handlers.distgit import DistGitMRHandler
 from hardly.jobs import StreamJobs
 from packit_service.celerizer import celery_app
 from packit_service.constants import (
@@ -33,8 +33,9 @@ logging.getLogger("github").setLevel(logging.WARNING)
 logging.getLogger("kubernetes").setLevel(logging.WARNING)
 logging.getLogger("botocore").setLevel(logging.WARNING)
 # info is just enough
-logging.getLogger("ogr").setLevel(logging.INFO)
+# logging.getLogger("ogr").setLevel(logging.INFO)
 # easier debugging
+logging.getLogger("ogr").setLevel(logging.DEBUG)
 logging.getLogger("packit").setLevel(logging.DEBUG)
 logging.getLogger("sandcastle").setLevel(logging.DEBUG)
 
@@ -68,7 +69,7 @@ def hardly_process(
 
 @celery_app.task(name=TaskName.dist_git_pr, base=HandlerTaskWithRetry)
 def run_dist_git_sync_handler(event: dict, package_config: dict, job_config: dict):
-    handler = DistGitPRHandler(
+    handler = DistGitMRHandler(
         package_config=load_package_config(package_config),
         job_config=load_job_config(job_config),
         event=event,

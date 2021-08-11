@@ -4,59 +4,9 @@
   vars:
     source_branch: "{{ lookup('env', 'SOURCE_BRANCH') }}"
   tasks:
-    - import_tasks: tasks/process-source-branch.yaml
+    # - import_tasks: tasks/process-source-branch.yaml
     - name: Install all RPM/python packages needed to run hardly
       dnf:
         name:
-          - python3-ipdb # for easy debugging
-          - nss_wrapper # openshift anyuid passwd madness
-          - redis # redis-cli for debugging
-          - origin-clients # for sandcastle
-          # we can't install kube from Fedora because kubernetes client API
-          # changes b/w major versions and we want to pin to the specific
-          # version to be sure it works well - it's 12.0.1 for now
-          # - python3-kubernetes  # for sandcastle
-          - python3-fedora # to access FAS
-          - python3-requests
-          - python3-alembic
-          - python3-prometheus_client
-          - python3-sqlalchemy
-          - python3-psycopg2
-          - python3-celery # unfortunately, the probes don't work with this
-          - python3-redis # celery[redis]
-          - python3-boto3 # celery[sqs]
-          - python3-pycurl # celery[sqs]
-          - python3-lazy-object-proxy
-          - python3-bugzilla # python-bugzilla (not bugzilla) on PyPI
-          - python3-backoff # Bugzilla class
-          - python3-flask-restx
-          - python3-xmltodict # parse Testing Farm results
-          - dnf-utils
-          - python3-pip
-          - make
-          # provides dnf builddep, required for packit dep installation from spec file
-          - dnf-plugins-core
-          # oc rsync /sandcastle -> sandcastle pod
-          - rsync
-          - fedpkg-stage
-        state: present
-    - import_tasks: tasks/install-packit-deps.yaml
-    - import_tasks: tasks/install-ogr-deps.yaml
-    - name: Install pip deps
-      pip:
-        name:
-          - git+https://github.com/packit/sandcastle.git@{{ source_branch }}
-          - sentry-sdk
-        executable: pip3
-    # --no-deps: to fail instead of installing from PyPI when we forget to add some dependency to packit.spec
-    - name: pip install packit & ogr with --no-deps
-      pip:
-        name:
-          - git+https://github.com/packit/packit.git@{{ source_branch }}
-          # ogr has only main branch
-          - git+https://github.com/packit/ogr.git
-          - git+https://github.com/packit/packit-service.git
-        executable: pip3
-        extra_args: --no-deps
-    - name: Check if all pip packages have all dependencies installed
-      command: pip check
+          - centpkg
+          - tig # for debugging, can be removed later

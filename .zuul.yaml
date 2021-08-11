@@ -4,6 +4,13 @@
     check:
       jobs:
         - pre-commit
+        - hardly-tests
     gate:
       jobs:
         - pre-commit
+
+- job:
+    name: hardly-tests
+    parent: base
+    description: Hardly run tests
+    run: files/zuul-tests.yaml

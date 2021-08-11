@@ -5,15 +5,7 @@
     - name: Install test RPM dependencies
       dnf:
         name:
-          - python3-flexmock
-          - tar
-          - rsync
+          - python3-flexmock-0.10.4
+          - python3-pytest
+          - python3-pytest-cov
         state: present
-    - name: Install pip deps
-      pip:
-        name:
-          - requre
-          - pytest
-          - pytest-cov
-          - pytest-flask
-        executable: pip3
