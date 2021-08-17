@@ -1,6 +1,8 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
+
 from logging import getLogger
+from typing import Optional
 
 from hardly.handlers.abstract import TaskName
 from packit.api import PackitAPI
@@ -10,6 +12,7 @@ from packit.local_project import LocalProject
 from packit_service.worker.events import MergeRequestGitlabEvent
 from packit_service.worker.handlers import JobHandler
 from packit_service.worker.handlers.abstract import reacts_to
+from packit_service.worker.reporting import StatusReporter, BaseCommitStatus
 from packit_service.worker.result import TaskResults
 
 logger = getLogger(__name__)
@@ -37,6 +40,16 @@ class DistGitMRHandler(JobHandler):
         self.mr_url = event.get("url")
         self.source_project_url = event.get("source_project_url")
         self.target_repo_branch = event.get("target_repo_branch")
+
+        self._status_reporter: Optional[StatusReporter] = None
+
+    @property
+    def status_reporter(self) -> StatusReporter:
+        if not self._status_reporter:
+            self._status_reporter = StatusReporter.get_instance(
+                self.project, self.data.commit_sha, self.data.pr_id
+            )
+        return self._status_reporter
 
     def run(self) -> TaskResults:
         """
@@ -73,4 +86,12 @@ class DistGitMRHandler(JobHandler):
         details = {}
         if dg_mr:
             details["msg"] = f"MR created: {dg_mr.url}"
+
+            self.status_reporter.set_status(
+                state=BaseCommitStatus.success,
+                description="Dist-git MR created.",
+                check_name=f"rpms#{dg_mr.url.split('/')[-1]}",
+                url=dg_mr.url,
+            )
+
         return TaskResults(success=True, details=details)
