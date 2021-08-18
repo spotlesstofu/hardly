@@ -1,3 +1,6 @@
+# Copyright Contributors to the Packit project.
+# SPDX-License-Identifier: MIT
+
 # Install dependencies from setup.cfg as rpm packages for ogr
 - name: Download script setupcfg2rpm.py
   get_url:

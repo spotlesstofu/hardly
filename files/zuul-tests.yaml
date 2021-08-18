@@ -1,3 +1,6 @@
+# Copyright Contributors to the Packit project.
+# SPDX-License-Identifier: MIT
+
 ---
 # This playbook is running tests inside Zuul
 - name: Hardly run tests

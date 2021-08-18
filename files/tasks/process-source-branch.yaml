@@ -1,3 +1,6 @@
+# Copyright Contributors to the Packit project.
+# SPDX-License-Identifier: MIT
+
 # Check and if necessary adjust source_branch variable
 
 - name: Fail on empty source_branch variable
