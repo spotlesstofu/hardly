@@ -1,7 +1,7 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
-.PHONY: hardly build-test-image
+.PHONY: hardly test-image
 
 BASE_IMAGE ?= quay.io/packit/packit-worker
 HARDLY_IMAGE ?= quay.io/packit/hardly:dev
@@ -36,6 +36,3 @@ check-in-container:
 		-w /src \
 		--security-opt label=disable \
 		$(TEST_IMAGE) make check "TEST_TARGET=$(TEST_TARGET)"
-
-check-inside-openshift-zuul:
-	ANSIBLE_STDOUT_CALLBACK=debug $(AP) files/check-inside-openshift.yaml

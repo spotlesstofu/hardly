@@ -1,10 +1,6 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
-
 from flexmock import flexmock
-from tests.spellbook import first_dict_value
-
-from hardly.tasks import run_dist_git_sync_handler
 from packit.api import PackitAPI
 from packit.config.job_config import JobConfigTriggerType
 from packit.local_project import LocalProject
@@ -13,7 +9,11 @@ from packit_service.config import ServiceConfig
 from packit_service.constants import SANDCASTLE_WORK_DIR
 from packit_service.service.db_triggers import AddPullRequestDbTrigger
 from packit_service.utils import dump_package_config
+from packit_service.worker.monitoring import Pushgateway
 from packit_service.worker.parser import Parser
+
+from hardly.tasks import run_dist_git_sync_handler
+from tests.spellbook import first_dict_value
 
 
 def test_dist_git_mr(mr_event):
@@ -67,7 +67,7 @@ def test_dist_git_mr(mr_event):
     config = ServiceConfig()
     config.command_handler_work_dir = SANDCASTLE_WORK_DIR
     flexmock(ServiceConfig).should_receive("get_service_config").and_return(config)
-
+    flexmock(Pushgateway).should_receive("push").once().and_return()
     flexmock(PackitAPI).should_receive("sync_release").with_args(
         version=version,
         title="Yet another testing MR",

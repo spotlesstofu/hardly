@@ -1,3 +1,6 @@
+# Copyright Contributors to the Packit project.
+# SPDX-License-Identifier: MIT
+
 # Celery worker which runs tasks (packit) from the web service
 
 # For now we always build FROM packit-worker:latest which is not what we want long term
