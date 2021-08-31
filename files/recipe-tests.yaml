@@ -8,7 +8,7 @@
     - name: Install test RPM dependencies
       dnf:
         name:
-          - python3-flexmock-0.10.4
+          - python3-flexmock
           - python3-pytest
           - python3-pytest-cov
         state: present
