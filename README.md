@@ -1,11 +1,31 @@
 # Hardly
 
 Code for (Celery) worker used in our "Stream service".
-The service is similar to [Packit service](https://github.com/packit/packit-service),
-but follows [this workflow](https://github.com/packit/research/tree/main/split-the-stream#what-does-the-source-git-workflow-mean).
-
 It reuses [packit-service's worker](https://github.com/packit/packit-service/tree/main/packit_service/worker)
 code and [implements new jobs as new handlers](https://github.com/packit/research/tree/main/split-the-stream#2-separate-workers).
+
+## Workflow
+
+The service is similar to [Packit service](https://github.com/packit/packit-service),
+but is expected to eventually follow [this workflow](https://github.com/packit/research/tree/main/split-the-stream#what-does-the-source-git-workflow-mean):
+
+##### Must have:
+
+- [ ] If a user creates a merge-request on the source-git repository:
+  - [x] Create a matching merge-request to the dist-git repository.
+  - [ ] Sync the CI results from the dist-git merge-request to the source-git merge-request.
+- [ ] If the dist-git is updated, update the source-git repository by opening a PR.
+- [ ] User is able to convert source-git change to the dist-git change locally via CLI.
+
+##### Should have:
+
+- [ ] If the source-git merge-request is updated, update the dist-git merge-request.
+- [ ] If the source-git merge-request is closed, close the dist-git merge-request.
+
+##### Could have:
+
+- [ ] User is able to re-trigger the dist-git CI from the source-git merge-request.
+- [ ] User is able to re-create the dist-git MR from the source-git merge-request.
 
 ## Running it locally
 
