@@ -97,3 +97,37 @@ class DistGitMRHandler(JobHandler):
             )
 
         return TaskResults(success=True, details=details)
+
+
+# @reacts_to(event=PipelineGitlabEvent)  # to be implemented in p-s
+class PipelineHandler(JobHandler):
+    task_name = TaskName.pipeline
+
+    def run(self) -> TaskResults:
+        """
+        This docstring is a result of 'spike' about how to sync dist-git MR
+        pipeline results back to the source-git MR.
+
+        The notification about a change of a pipeline's status would be sent via
+        a group webhook (with "Pipeline events" trigger) manually added to the
+        redhat/centos-stream/rpms group.
+        For staging, we'll hopefully have similarly configured
+        redhat/centos-stream/staging/rpms group,
+        otherwise a project webhook would need to be added to forks in
+        packit-as-a-service-stg namespace, because that's where a pipeline
+        runs in case of non-premium plan.
+
+        The Pipeline event sent to a webhook contains:
+        - project name
+        - ref: branch name, which contains number of the original source-git MR
+        The source-git namespace can be derived from
+        package_config.dist_git_namespace.rstrip("/rpms")
+        In case there's anything missing, we'd need to store the mapping info
+        into DB when creating the dist-git MR.
+
+        There's probably no way we can manually re-construct the whole pipeline from dist-git MR
+        in the source-git MR without running it,
+        but we can set a commit status with all the necessary information
+        (or at least a link to the dist-git MR pipeline).
+        """
+        raise NotImplementedError()
