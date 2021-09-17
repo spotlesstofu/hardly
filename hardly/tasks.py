@@ -17,11 +17,6 @@ from packit_service.constants import (
     CELERY_DEFAULT_MAIN_TASK_NAME,
 )
 from packit_service.utils import load_job_config, load_package_config
-from packit_service.worker.handlers import (
-    CoprBuildEndHandler,
-    CoprBuildStartHandler,
-    CoprBuildHandler,
-)
 from packit_service.worker.result import TaskResults
 
 logger = logging.getLogger(__name__)
@@ -70,38 +65,6 @@ def hardly_process(
 @celery_app.task(name=TaskName.dist_git_pr, base=HandlerTaskWithRetry)
 def run_dist_git_sync_handler(event: dict, package_config: dict, job_config: dict):
     handler = DistGitMRHandler(
-        package_config=load_package_config(package_config),
-        job_config=load_job_config(job_config),
-        event=event,
-    )
-    return get_handlers_task_results(handler.run_job(), event)
-
-
-@celery_app.task(
-    name=TaskName.copr_build, base=HandlerTaskWithRetry, queue="long-running"
-)
-def run_copr_build_handler(event: dict, package_config: dict, job_config: dict):
-    handler = CoprBuildHandler(
-        package_config=load_package_config(package_config),
-        job_config=load_job_config(job_config),
-        event=event,
-    )
-    return get_handlers_task_results(handler.run_job(), event)
-
-
-@celery_app.task(name=TaskName.copr_build_start, base=HandlerTaskWithRetry)
-def run_copr_build_start_handler(event: dict, package_config: dict, job_config: dict):
-    handler = CoprBuildStartHandler(
-        package_config=load_package_config(package_config),
-        job_config=load_job_config(job_config),
-        event=event,
-    )
-    return get_handlers_task_results(handler.run_job(), event)
-
-
-@celery_app.task(name=TaskName.copr_build_end, base=HandlerTaskWithRetry)
-def run_copr_build_end_handler(event: dict, package_config: dict, job_config: dict):
-    handler = CoprBuildEndHandler(
         package_config=load_package_config(package_config),
         job_config=load_job_config(job_config),
         event=event,
