@@ -55,7 +55,9 @@ clone the [deployment repo](https://github.com/packit/deployment) and:
 2. link secrets into [secrets](https://github.com/packit/deployment/tree/main/secrets) / stream/{prod|stg}
 3. `SERVICE=stream DEPLOYMENT={deployment} make deploy`
 
-## Where it actually runs
+## Deployments
+
+### Production
 
 Production instance runs [here](https://console.pro-eu-west-1.openshift.com/console/project/stream-prod)
 ([API](https://prod.stream.packit.dev/api/)) and serves
@@ -65,16 +67,27 @@ Example:
 created from
 [source-git MR](https://gitlab.com/redhat/centos-stream/src/luksmeta/-/merge_requests/2).
 
+### Staging
+
 Staging instance runs [here](https://console.pro-eu-west-1.openshift.com/console/project/stream-stg)
 ([API](https://stg.stream.packit.dev/api/)) and is used to serve some
 repos in our [packit-service/src/ namespace](https://gitlab.com/packit-service/src).
 Because we can't use Group Webhooks there to set up the service for whole namespace
-currently only [open-vm-tools](https://gitlab.com/packit-service/src/open-vm-tools) and
-[luksmeta](https://gitlab.com/packit-service/src/luksmeta) is served.
-Example:
-[dist-git MR](https://gitlab.com/packit-service/rpms/open-vm-tools/-/merge_requests/11)
-created from
-[source-git MR](https://gitlab.com/packit-service/src/open-vm-tools/-/merge_requests/6).
+currently only some repos are served:
+
+- open-vm-tools: [source-git MR](https://gitlab.com/packit-service/src/open-vm-tools/-/merge_requests/8) -> [dist-git MR](https://gitlab.com/packit-service/rpms/open-vm-tools/-/merge_requests/18)
+- luksmeta: [source-git MR](https://gitlab.com/packit-service/src/luksmeta/-/merge_requests/2) -> [dist-git MR](https://gitlab.com/packit-service/rpms/luksmeta/-/merge_requests/2)
+
+#### CI @ staging
+
+In order for us to be able to experiment with syncing CI results from a dist-git MR back to a source-git MR,
+we have a fake CI setup.
+There's a `.gitlab-ci.yml` stored in both, the source-git and dist-git repos served by the staging service.
+In a source-git repo it's in `.distro/` ([example](https://gitlab.com/packit-service/src/open-vm-tools/-/blob/c9s/.distro/.gitlab-ci.yml))
+and before the service creates a dist-git MR from a source-git MR the file is synced into the dist-git repo.
+Once the dist-git MR is created the pipeline is run based on the file and the results are seen in the dist-git MR.
+It's stored also in the dist-git repo ([example](https://gitlab.com/packit-service/rpms/open-vm-tools/-/blob/c9s/.gitlab-ci.yml)),
+so that the file is not in a diff of a newly created dist-git MR as a newly added file.
 
 ## Image
 
