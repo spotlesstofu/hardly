@@ -4,7 +4,12 @@ from logging import getLogger
 from typing import List
 
 from hardly.handlers import DistGitMRHandler
-from packit_service.worker.events import Event, MergeRequestGitlabEvent
+from hardly.handlers.distgit import PipelineHandler
+from packit_service.worker.events import (
+    Event,
+    MergeRequestGitlabEvent,
+    PipelineGitlabEvent,
+)
 from packit_service.worker.handlers import JobHandler
 from packit_service.worker.jobs import SteveJobs
 from packit_service.worker.parser import Parser
@@ -54,6 +59,12 @@ class StreamJobs(SteveJobs):
         # DistGitMRHandler handler is (for now) run even the job is not configured in a package.
         if isinstance(event_object, MergeRequestGitlabEvent):
             DistGitMRHandler.get_signature(
+                event=event_object,
+                job=None,
+            ).apply_async()
+
+        if isinstance(event_object, PipelineGitlabEvent):
+            PipelineHandler.get_signature(
                 event=event_object,
                 job=None,
             ).apply_async()

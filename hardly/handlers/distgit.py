@@ -2,16 +2,21 @@
 # SPDX-License-Identifier: MIT
 
 from logging import getLogger
+from os import getenv
+from re import fullmatch
 from typing import Optional
 
 from hardly.handlers.abstract import TaskName
+from ogr.abstract import GitProject, PullRequest
 from packit.api import PackitAPI
 from packit.config.job_config import JobConfig
 from packit.config.package_config import PackageConfig
 from packit.local_project import LocalProject
-from packit_service.worker.events import MergeRequestGitlabEvent
+from packit_service.worker.events import MergeRequestGitlabEvent, PipelineGitlabEvent
 from packit_service.worker.handlers import JobHandler
-from packit_service.worker.handlers.abstract import reacts_to
+from packit_service.worker.handlers.abstract import (
+    reacts_to,
+)
 from packit_service.worker.reporting import StatusReporter, BaseCommitStatus
 from packit_service.worker.result import TaskResults
 
@@ -47,7 +52,9 @@ class DistGitMRHandler(JobHandler):
     def status_reporter(self) -> StatusReporter:
         if not self._status_reporter:
             self._status_reporter = StatusReporter.get_instance(
-                self.project, self.data.commit_sha, self.data.pr_id
+                project=self.project,
+                commit_sha=self.data.commit_sha,
+                pr_id=self.data.pr_id,
             )
         return self._status_reporter
 
@@ -86,6 +93,7 @@ class DistGitMRHandler(JobHandler):
             title=self.mr_title,
             description=f"{self.mr_description}\n\n\nSee: {self.mr_url}",
             sync_default_files=False,
+            # we rely on this in PipelineHandler below
             local_pr_branch_suffix=f"src-{self.mr_identifier}",
         )
 
@@ -103,35 +111,116 @@ class DistGitMRHandler(JobHandler):
         return TaskResults(success=True, details=details)
 
 
-# @reacts_to(event=PipelineGitlabEvent)  # to be implemented in p-s
+@reacts_to(event=PipelineGitlabEvent)
 class PipelineHandler(JobHandler):
     task_name = TaskName.pipeline
 
+    def __init__(
+        self,
+        package_config: PackageConfig,
+        job_config: JobConfig,
+        event: dict,
+    ):
+        super().__init__(
+            package_config=package_config,
+            job_config=job_config,
+            event=event,
+        )
+        # It would ideally be taken from package_config.dist_git_namespace
+        # instead of from getenv, but package_config is None because there's no config file.
+        self.src_git_namespace: str = getenv("DISTGIT_NAMESPACE").replace(
+            "/rpms", "/src"
+        )
+        # project name is expected to be the same in dist-git and src-git
+        self.src_git_name: str = event["project_name"]
+        # branch name
+        self.git_ref: str = event["git_ref"]
+
+        self.status: str = event["status"]
+        self.detailed_status: str = event["detailed_status"]
+        self.pipeline_url: str = (
+            f"{event['project_url']}/-/pipelines/{event['pipeline_id']}"
+        )
+
+        # lazy
+        self._src_git_project: Optional[GitProject] = None
+        self._src_git_mr_id: Optional[int] = None
+        self._src_git_mr: Optional[PullRequest] = None
+        self._status_reporter: Optional[StatusReporter] = None
+
+    @property
+    def src_git_mr_id(self) -> Optional[int]:
+        """
+        https://docs.gitlab.com/ee/user/project/integrations/webhooks.html#pipeline-events
+        suggests, there's a merge_request field containing relation to the dist-git MR,
+        sadly, in reality it's empty.
+        Luckily, we've stored the src-git MR in the branch name (self.git_ref)
+        from which the dist-git MR is created.
+        See how we set local_pr_branch_suffix in DistGitMRHandler.run()
+        :return: src-git MR number or None if self.git_ref doesn't contain it
+        """
+        if not self._src_git_mr_id:
+            # git_ref is expected in a form {version}-{dist_git_branch}-src-{mr_number}
+            m = fullmatch(r".+-.+-src-(\d+)", self.git_ref)
+            self._src_git_mr_id = int(m[1]) if m else None
+        return self._src_git_mr_id
+
+    @property
+    def src_git_project(self) -> GitProject:
+        if not self._src_git_project:
+            self._src_git_project = self.project.service.get_project(
+                namespace=self.src_git_namespace,
+                repo=self.src_git_name,
+            )
+        return self._src_git_project
+
+    @property
+    def src_git_mr(self) -> PullRequest:
+        if not self._src_git_mr:
+            self._src_git_mr = self.src_git_project.get_pr(self.src_git_mr_id)
+        return self._src_git_mr
+
+    @property
+    def status_reporter(self) -> StatusReporter:
+        if not self._status_reporter:
+            self._status_reporter = StatusReporter.get_instance(
+                project=self.src_git_project,
+                # The head_commit is latest commit of the MR.
+                # If there was a new commit pushed before the pipeline ended, the report
+                # might be incorrect until the new (for the new commit) pipeline finishes.
+                commit_sha=self.src_git_mr.head_commit,
+                pr_id=self.src_git_mr_id,
+            )
+        return self._status_reporter
+
     def run(self) -> TaskResults:
         """
-        This docstring is a result of 'spike' about how to sync dist-git MR
-        pipeline results back to the source-git MR.
-
-        The notification about a change of a pipeline's status would be sent via
-        a group webhook (with "Pipeline events" trigger) manually added to the
-        redhat/centos-stream/rpms group.
-        For staging, we'll hopefully have similarly configured
-        redhat/centos-stream/staging/rpms group,
-        otherwise a project webhook would need to be added to forks in
-        packit-as-a-service-stg namespace, because that's where a pipeline
-        runs in case of non-premium plan.
-
-        The Pipeline event sent to a webhook contains:
-        - project name
-        - ref: branch name, which contains number of the original source-git MR
-        The source-git namespace can be derived from
-        package_config.dist_git_namespace.rstrip("/rpms")
-        In case there's anything missing, we'd need to store the mapping info
-        into DB when creating the dist-git MR.
-
-        There's probably no way we can manually re-construct the whole pipeline from dist-git MR
-        in the source-git MR without running it,
-        but we can set a commit status with all the necessary information
-        (or at least a link to the dist-git MR pipeline).
+        When a dist-git MR CI Pipeline changes status, create a commit
+        status in the original src-git MR with a link to the Pipeline.
         """
-        raise NotImplementedError()
+        if not self.src_git_mr_id:
+            logger.debug("Not a source-git related pipeline")
+            return TaskResults(success=True, details={})
+
+        if self.status in ["pending", "running"]:
+            # Our account(s) have no access into the fork repos,
+            # to set the commit status (which would look like a Pipeline result)
+            # so the status reporter fallbacks to adding a commit comment.
+            # To not pollute MRs with too many comments,
+            # let's skip 'Pipeline is running' comment for now.
+            logger.debug("Not setting status for 'Pipeline is pending/running' event")
+            return TaskResults(success=True, details={})
+
+        pipeline_status_to_base_commit_status = {
+            "success": BaseCommitStatus.success,
+            "failed": BaseCommitStatus.failure,
+            "pending": BaseCommitStatus.pending,
+            "running": BaseCommitStatus.running,
+        }
+        self.status_reporter.set_status(
+            state=pipeline_status_to_base_commit_status[self.status],
+            description=f"Changed status to {self.detailed_status}.",
+            check_name="Dist-git MR CI Pipeline",
+            url=self.pipeline_url,
+        )
+        return TaskResults(success=True, details={})
