@@ -62,6 +62,10 @@ class DistGitMRHandler(JobHandler):
             )
             return TaskResults(success=True, details={})
 
+        if not self.package_config:
+            logger.debug("No package config found.")
+            return TaskResults(success=True, details={})
+
         logger.debug(f"About to create a dist-git MR from source-git MR {self.mr_url}")
 
         source_project = self.service_config.get_project(url=self.source_project_url)
