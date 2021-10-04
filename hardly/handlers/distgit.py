@@ -46,18 +46,6 @@ class DistGitMRHandler(JobHandler):
         self.source_project_url = event.get("source_project_url")
         self.target_repo_branch = event.get("target_repo_branch")
 
-        self._status_reporter: Optional[StatusReporter] = None
-
-    @property
-    def status_reporter(self) -> StatusReporter:
-        if not self._status_reporter:
-            self._status_reporter = StatusReporter.get_instance(
-                project=self.project,
-                commit_sha=self.data.commit_sha,
-                pr_id=self.data.pr_id,
-            )
-        return self._status_reporter
-
     def run(self) -> TaskResults:
         """
         If user creates a merge-request on the source-git repository,
@@ -99,14 +87,9 @@ class DistGitMRHandler(JobHandler):
 
         details = {}
         if dg_mr:
-            details["msg"] = f"MR created: {dg_mr.url}"
-
-            self.status_reporter.set_status(
-                state=BaseCommitStatus.success,
-                description="Dist-git MR created.",
-                check_name=f"rpms#{dg_mr.url.split('/')[-1]}",
-                url=dg_mr.url,
-            )
+            msg = f"[Dist-git MR #{dg_mr.id}]({dg_mr.url}) created."
+            details["msg"] = msg
+            self.project.get_pr(int(self.mr_identifier)).comment(msg)
 
         return TaskResults(success=True, details=details)
 
