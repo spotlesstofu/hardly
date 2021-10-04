@@ -41,6 +41,7 @@ services:
       DISTGIT_URL: https://gitlab.com/
       DISTGIT_NAMESPACE: packit-service/rpms
       CELERY_RETRY_LIMIT: 0
+      PUSHGATEWAY_ADDRESS: ""
     volumes:
       - ./hardly:/src/hardly:ro,z
       - ../ogr/ogr:/usr/local/lib/python3.9/site-packages/ogr:ro,z
