@@ -11,9 +11,9 @@ but is expected to eventually follow [this workflow](https://github.com/packit/r
 
 ##### Must have:
 
-- [ ] If a user creates a merge-request on the source-git repository:
+- [x] If a user creates a merge-request on the source-git repository:
   - [x] Create a matching merge-request to the dist-git repository.
-  - [ ] Sync the CI results from the dist-git merge-request to the source-git merge-request.
+  - [x] Sync the CI results from the dist-git merge-request to the source-git merge-request.
 - [ ] If the dist-git is updated, update the source-git repository by opening a PR.
 - [ ] User is able to convert source-git change to the dist-git change locally via CLI.
 
@@ -78,6 +78,10 @@ currently only some repos are served:
 - open-vm-tools: [source-git MR](https://gitlab.com/packit-service/src/open-vm-tools/-/merge_requests/8) -> [dist-git MR](https://gitlab.com/packit-service/rpms/open-vm-tools/-/merge_requests/18)
 - luksmeta: [source-git MR](https://gitlab.com/packit-service/src/luksmeta/-/merge_requests/2) -> [dist-git MR](https://gitlab.com/packit-service/rpms/luksmeta/-/merge_requests/2)
 
+There are actually real staging src-git and dist-git repos in [redhat/centos-stream/staging namespace](https://gitlab.com/redhat/centos-stream/staging)
+but we haven't used them yet, because the CI (Pipelines) there don't seem to work the same way as in prod repos
+so we use repos in our namespace (see above) because we have at least full control over them.
+
 #### CI @ staging
 
 In order for us to be able to experiment with syncing CI results from a dist-git MR back to a source-git MR,
@@ -88,6 +92,18 @@ and before the service creates a dist-git MR from a source-git MR the file is sy
 Once the dist-git MR is created the pipeline is run based on the file and the results are seen in the dist-git MR.
 It's stored also in the dist-git repo ([example](https://gitlab.com/packit-service/rpms/open-vm-tools/-/blob/c9s/.gitlab-ci.yml)),
 so that the file is not in a diff of a newly created dist-git MR as a newly added file.
+
+### Syncing dist-git MR CI results back to a src-git MR
+
+#### prod
+
+The notification about a change of a pipeline's status is sent to a group webhook (with "Pipeline events" trigger)
+which is manually added to the [redhat/centos-stream/rpms group](https://gitlab.com/redhat/centos-stream/rpms).
+
+#### staging
+
+For staging, a project webhook is added to forks in [packit-as-a-service-stg namespace](https://gitlab.com/packit-as-a-service-stg),
+because that's where a pipeline runs in case of non-premium plan (packit-service/rpms/ namespace).
 
 ## Image
 
