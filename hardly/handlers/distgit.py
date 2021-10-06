@@ -135,8 +135,9 @@ class PipelineHandler(JobHandler):
     def src_git_mr_id(self) -> Optional[int]:
         """
         https://docs.gitlab.com/ee/user/project/integrations/webhooks.html#pipeline-events
-        suggests, there's a merge_request field containing relation to the dist-git MR,
-        sadly, in reality it's empty.
+        suggests, there's a merge_request field containing relation to the (dist-git) MR.
+        Sadly, it's not always true, as in our staging repos,
+        in which case the merge_request info is empty.
         Luckily, we've stored the src-git MR in the branch name (self.git_ref)
         from which the dist-git MR is created.
         See how we set local_pr_branch_suffix in DistGitMRHandler.run()
@@ -185,21 +186,18 @@ class PipelineHandler(JobHandler):
             logger.debug("Not a source-git related pipeline")
             return TaskResults(success=True, details={})
 
-        if self.status in ["pending", "running"]:
-            # Our account(s) have no access into the fork repos,
-            # to set the commit status (which would look like a Pipeline result)
-            # so the status reporter fallbacks to adding a commit comment.
-            # To not pollute MRs with too many comments,
-            # let's skip 'Pipeline is running' comment for now.
-            logger.debug("Not setting status for 'Pipeline is pending/running' event")
-            return TaskResults(success=True, details={})
-
         pipeline_status_to_base_commit_status = {
             "success": BaseCommitStatus.success,
             "failed": BaseCommitStatus.failure,
             "pending": BaseCommitStatus.pending,
             "running": BaseCommitStatus.running,
         }
+
+        # Our account(s) have no access (unless it's manually added) into the fork repos,
+        # to set the commit status (which would look like a Pipeline result)
+        # so the status reporter fallbacks to adding a commit comment.
+        # To not pollute MRs with too many comments, we might later skip
+        # the 'Pipeline is pending/running' events.
         self.status_reporter.set_status(
             state=pipeline_status_to_base_commit_status[self.status],
             description=f"Changed status to {self.detailed_status}.",
