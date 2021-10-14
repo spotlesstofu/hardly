@@ -77,10 +77,14 @@ currently only some repos are served:
 
 - open-vm-tools: [source-git MR](https://gitlab.com/packit-service/src/open-vm-tools/-/merge_requests/8) -> [dist-git MR](https://gitlab.com/packit-service/rpms/open-vm-tools/-/merge_requests/18)
 - luksmeta: [source-git MR](https://gitlab.com/packit-service/src/luksmeta/-/merge_requests/2) -> [dist-git MR](https://gitlab.com/packit-service/rpms/luksmeta/-/merge_requests/2)
+- glibc
 
 There are actually real staging src-git and dist-git repos in [redhat/centos-stream/staging namespace](https://gitlab.com/redhat/centos-stream/staging)
 but we haven't used them yet, because the CI (Pipelines) there don't seem to work the same way as in prod repos
 so we use repos in our namespace (see above) because we have at least full control over them.
+
+[gitlab_webhook.py](https://github.com/packit/deployment/blob/main/scripts/gitlab_webhook.py)
+can be used to generate secret tokens to be used for setting up webhooks.
 
 #### CI @ staging
 
