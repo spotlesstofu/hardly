@@ -89,13 +89,15 @@ you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
             local_pr_branch_suffix=f"src-{self.mr_identifier}",
         )
 
-        details = {}
         if dg_mr:
-            msg = f"[Dist-git MR #{dg_mr.id}]({dg_mr.url}) created."
-            details["msg"] = msg
-            self.project.get_pr(int(self.mr_identifier)).comment(msg)
+            comment = f"""[Dist-git MR #{dg_mr.id}]({dg_mr.url})
+has been created for sake of triggering the downstream checks.
+It ensures that your contribution is valid and can be incorporated in CentOS Stream
+as dist-git is still the authoritative source for the distribution.
+We want to run checks there only so they don't need to be reimplemented in source-git as well."""
+            self.project.get_pr(int(self.mr_identifier)).comment(comment)
 
-        return TaskResults(success=True, details=details)
+        return TaskResults(success=True)
 
 
 @reacts_to(event=PipelineGitlabEvent)
