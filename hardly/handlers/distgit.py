@@ -75,11 +75,15 @@ class DistGitMRHandler(JobHandler):
             package_config=self.package_config,
             upstream_local_project=self.local_project,
         )
-
+        dg_mr_info = f"""###### Info for package maintainer
+This MR has been automatically created from
+[this source-git MR]({self.mr_url}).
+Please review the contribution and once you are comfortable with the content,
+you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
         dg_mr = self.api.sync_release(
             version=self.api.up.get_specfile_version(),
             title=self.mr_title,
-            description=f"{self.mr_description}\n\n\nSee: {self.mr_url}",
+            description=f"{self.mr_description}\n\n---\n{dg_mr_info}",
             sync_default_files=False,
             # we rely on this in PipelineHandler below
             local_pr_branch_suffix=f"src-{self.mr_identifier}",
