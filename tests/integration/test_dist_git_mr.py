@@ -75,8 +75,12 @@ def test_dist_git_mr(mr_event):
 memory access if the length of the message received is less than the size
 of the expected packet header.
 
-
-See: https://gitlab.com/packit-service/src/open-vm-tools/-/merge_requests/5""",
+---
+###### Info for package maintainer
+This MR has been automatically created from
+[this source-git MR](https://gitlab.com/packit-service/src/open-vm-tools/-/merge_requests/5).
+Please review the contribution and once you are comfortable with the content,
+you should trigger a CI pipeline run via `Pipelines → Run pipeline`.""",
         sync_default_files=False,
         local_pr_branch_suffix="src-5",
     ).once()
