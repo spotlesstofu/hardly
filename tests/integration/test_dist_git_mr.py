@@ -70,6 +70,7 @@ def test_dist_git_mr(mr_event):
     flexmock(Pushgateway).should_receive("push").once().and_return()
     flexmock(PackitAPI).should_receive("sync_release").with_args(
         version=version,
+        add_new_sources=False,
         title="Yet another testing MR",
         description="""DnD RpcV3: A corrupted packet received may result in an out of bounds (OOB)
 memory access if the length of the message received is less than the size
