@@ -1,6 +1,8 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 
+import re
+
 from logging import getLogger
 from os import getenv
 from re import fullmatch
@@ -44,6 +46,9 @@ class DistGitMRHandler(JobHandler):
         self.mr_description = event.get("description")
         self.mr_url = event.get("url")
         self.source_project_url = event.get("source_project_url")
+        self.target_repo = (
+            event.get("target_repo_namespace") + "/" + event.get("target_repo_name")
+        )
         self.target_repo_branch = event.get("target_repo_branch")
 
     def run(self) -> TaskResults:
@@ -51,9 +56,10 @@ class DistGitMRHandler(JobHandler):
         If user creates a merge-request on the source-git repository,
         create a matching merge-request to the dist-git repository.
         """
-        if self.target_repo_branch != "c9s":
+        if not self.handle_target():
             logger.debug(
-                f"Not creating a dist-git MR from {self.target_repo_branch} branch"
+                "Not creating a dist-git MR from "
+                f"{self.target_repo}:{self.target_repo_branch}"
             )
             return TaskResults(success=True, details={})
 
@@ -99,6 +105,21 @@ We want to run checks there only so they don't need to be reimplemented in sourc
             self.project.get_pr(int(self.mr_identifier)).comment(comment)
 
         return TaskResults(success=True)
+
+    def handle_target(self) -> bool:
+        """Tell if a target repo and branch pair of an MR should be handled or ignored."""
+        handled_targets = self.service_config.gitlab_mr_targets_handled
+
+        # If nothing is configured, all targets are handled.
+        if not handled_targets:
+            return True
+
+        for target in handled_targets:
+            if re.fullmatch(target.repo or ".+", self.target_repo) and re.fullmatch(
+                target.branch or ".+", self.target_repo_branch
+            ):
+                return True
+        return False
 
 
 @reacts_to(event=PipelineGitlabEvent)

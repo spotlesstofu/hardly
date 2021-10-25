@@ -66,6 +66,7 @@ def test_dist_git_mr(mr_event):
 
     config = ServiceConfig()
     config.command_handler_work_dir = SANDCASTLE_WORK_DIR
+    config.gitlab_mr_targets_handled = None
     flexmock(ServiceConfig).should_receive("get_service_config").and_return(config)
     flexmock(Pushgateway).should_receive("push").once().and_return()
     flexmock(PackitAPI).should_receive("sync_release").with_args(
