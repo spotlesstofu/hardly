@@ -80,9 +80,7 @@ of the expected packet header.
 ---
 ###### Info for package maintainer
 This MR has been automatically created from
-[this source-git MR](https://gitlab.com/packit-service/src/open-vm-tools/-/merge_requests/5).
-Please review the contribution and once you are comfortable with the content,
-you should trigger a CI pipeline run via `Pipelines → Run pipeline`.""",
+[this source-git MR](https://gitlab.com/packit-service/src/open-vm-tools/-/merge_requests/5).""",
         sync_default_files=False,
         local_pr_branch_suffix="src-5",
     ).once()

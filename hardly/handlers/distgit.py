@@ -83,7 +83,9 @@ class DistGitMRHandler(JobHandler):
         )
         dg_mr_info = f"""###### Info for package maintainer
 This MR has been automatically created from
-[this source-git MR]({self.mr_url}).
+[this source-git MR]({self.mr_url})."""
+        if getenv("PROJECT") and getenv("PROJECT").startswith("stream"):
+            dg_mr_info += """
 Please review the contribution and once you are comfortable with the content,
 you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
         dg_mr = self.api.sync_release(
@@ -99,8 +101,8 @@ you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
         if dg_mr:
             comment = f"""[Dist-git MR #{dg_mr.id}]({dg_mr.url})
 has been created for sake of triggering the downstream checks.
-It ensures that your contribution is valid and can be incorporated in CentOS Stream
-as dist-git is still the authoritative source for the distribution.
+It ensures that your contribution is valid and can be incorporated in
+dist-git as it is still the authoritative source for the distribution.
 We want to run checks there only so they don't need to be reimplemented in source-git as well."""
             self.project.get_pr(int(self.mr_identifier)).comment(comment)
 
