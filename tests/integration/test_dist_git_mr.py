@@ -83,6 +83,7 @@ This MR has been automatically created from
 [this source-git MR](https://gitlab.com/packit-service/src/open-vm-tools/-/merge_requests/5).""",
         sync_default_files=False,
         local_pr_branch_suffix="src-5",
+        mark_commit_origin=True,
     ).once()
 
     event = Parser.parse_event(mr_event)

@@ -96,6 +96,7 @@ you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
             sync_default_files=False,
             # we rely on this in PipelineHandler below
             local_pr_branch_suffix=f"src-{self.mr_identifier}",
+            mark_commit_origin=True,
         )
 
         if dg_mr:
