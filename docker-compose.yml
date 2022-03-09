@@ -72,6 +72,7 @@ services:
       - ../ogr/ogr:/usr/local/lib/python3.9/site-packages/ogr:ro,z
       - ../packit/packit:/usr/local/lib/python3.9/site-packages/packit:ro,z
       - ../packit-service/packit_service:/usr/local/lib/python3.9/site-packages/packit_service:ro,z
+      - ../packit-service/alembic:/src/alembic:ro,z
       - ./secrets/${SERVICE}/dev/packit-service.yaml:/home/packit/.config/packit-service.yaml:ro,z
       - ./secrets/${SERVICE}/dev/fullchain.pem:/secrets/fullchain.pem:ro,z
       - ./secrets/${SERVICE}/dev/privkey.pem:/secrets/privkey.pem:ro,z
