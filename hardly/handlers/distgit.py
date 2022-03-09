@@ -21,6 +21,7 @@ from packit_service.worker.handlers.abstract import (
 )
 from packit_service.worker.reporting import StatusReporter, BaseCommitStatus
 from packit_service.worker.result import TaskResults
+from packit_service.models import SrcGitPRDistGitPRModel
 
 logger = getLogger(__name__)
 
@@ -106,6 +107,17 @@ It ensures that your contribution is valid and can be incorporated in
 dist-git as it is still the authoritative source for the distribution.
 We want to run checks there only so they don't need to be reimplemented in source-git as well."""
             self.project.get_pr(int(self.mr_identifier)).comment(comment)
+
+            SrcGitPRDistGitPRModel.get_or_create(
+                self.mr_identifier,
+                source_project.namespace,
+                source_project.repo,
+                source_project.get_web_url(),
+                dg_mr.id,
+                dg_mr.target_project.namespace,
+                dg_mr.target_project.repo,
+                dg_mr.target_project.get_web_url(),
+            )
 
         return TaskResults(success=True)
 
