@@ -2,26 +2,25 @@
 # SPDX-License-Identifier: MIT
 
 import re
-
 from logging import getLogger
 from os import getenv
 from re import fullmatch
 from typing import Optional
 
 from hardly.handlers.abstract import TaskName
-from ogr.abstract import GitProject, PullRequest
 from packit.api import PackitAPI
 from packit.config.job_config import JobConfig
 from packit.config.package_config import PackageConfig
 from packit.local_project import LocalProject
+from packit_service.models import PullRequestModel, SourceGitPRDistGitPRModel
 from packit_service.worker.events import MergeRequestGitlabEvent, PipelineGitlabEvent
+from packit_service.worker.events.pagure import PullRequestFlagPagureEvent
 from packit_service.worker.handlers import JobHandler
 from packit_service.worker.handlers.abstract import (
     reacts_to,
 )
 from packit_service.worker.reporting import StatusReporter, BaseCommitStatus
 from packit_service.worker.result import TaskResults
-from packit_service.models import SourceGitPRDistGitPRModel
 
 logger = getLogger(__name__)
 
@@ -137,9 +136,73 @@ We want to run checks there only so they don't need to be reimplemented in sourc
         return False
 
 
+class SyncFromDistGitPRHandler(JobHandler):
+    def __init__(
+        self,
+        package_config: PackageConfig,
+        job_config: JobConfig,
+        event: dict,
+    ):
+        super().__init__(
+            package_config=package_config,
+            job_config=job_config,
+            event=event,
+        )
+
+        self.status_state: Optional[BaseCommitStatus] = None
+        self.status_description: Optional[str] = None
+        self.status_check_name: Optional[str] = None
+        self.status_url: Optional[str] = None
+
+    def dist_git_pr_model(self) -> Optional[PullRequestModel]:
+        raise NotImplementedError("This should have been implemented.")
+
+    def run(self) -> TaskResults:
+        """
+        When a dist-git PR flag/pipeline is updated, create a commit
+        status in the original source-git MR with the flag/pipeline info.
+        """
+        if not (dist_git_pr_model := self.dist_git_pr_model()):
+            logger.debug("No dist-git PR model.")
+            return TaskResults(success=True, details={})
+        if not (
+            sg_dg := SourceGitPRDistGitPRModel.get_by_dist_git_id(dist_git_pr_model.id)
+        ):
+            logger.debug(f"Source-git PR for {dist_git_pr_model} not found.")
+            return TaskResults(success=True, details={})
+
+        source_git_pr_model = sg_dg.source_git_pull_request
+        source_git_project = self.service_config.get_project(
+            url=source_git_pr_model.project.project_url
+        )
+        source_git_pr = source_git_project.get_pr(source_git_pr_model.pr_id)
+
+        status_reporter = StatusReporter.get_instance(
+            project=source_git_project,
+            # The head_commit is the latest commit of the MR.
+            # If there was a new commit pushed before the pipeline ended, the report
+            # might be incorrect until the new (for the new commit) pipeline finishes.
+            commit_sha=source_git_pr.head_commit,
+            pr_id=source_git_pr.id,
+        )
+        # Our account(s) have no access (unless it's manually added) into the fork repos,
+        # to set the commit status (which would look like a Pipeline result)
+        # so the status reporter fallbacks to adding a commit comment.
+        # To not pollute MRs with too many comments, we might later skip
+        # the 'Pipeline is pending/running' events.
+        # See also https://github.com/packit/packit-service/issues/1411
+        status_reporter.set_status(
+            state=self.status_state,
+            description=self.status_description,
+            check_name=self.status_check_name,
+            url=self.status_url,
+        )
+        return TaskResults(success=True, details={})
+
+
 @reacts_to(event=PipelineGitlabEvent)
-class PipelineHandler(JobHandler):
-    task_name = TaskName.pipeline
+class SyncFromGitlabMRHandler(SyncFromDistGitPRHandler):
+    task_name = TaskName.sync_from_gitlab_mr
 
     def __init__(
         self,
@@ -152,99 +215,72 @@ class PipelineHandler(JobHandler):
             job_config=job_config,
             event=event,
         )
-        # It would ideally be taken from package_config.dist_git_namespace
-        # instead of from getenv, but package_config is None because there's no config file.
-        self.src_git_namespace: str = getenv("DISTGIT_NAMESPACE").replace(
-            "/rpms", "/src"
-        )
-        # project name is expected to be the same in dist-git and src-git
-        self.src_git_name: str = event["project_name"]
-        # branch name
-        self.git_ref: str = event["git_ref"]
 
-        self.status: str = event["status"]
-        self.detailed_status: str = event["detailed_status"]
-        self.pipeline_url: str = (
+        # https://docs.gitlab.com/ee/api/pipelines.html#list-project-pipelines -> status
+        self.status_state: BaseCommitStatus = {
+            "pending": BaseCommitStatus.pending,
+            "created": BaseCommitStatus.pending,
+            "waiting_for_resource": BaseCommitStatus.pending,
+            "preparing": BaseCommitStatus.pending,
+            "scheduled": BaseCommitStatus.pending,
+            "manual": BaseCommitStatus.pending,
+            "running": BaseCommitStatus.running,
+            "success": BaseCommitStatus.success,
+            "skipped": BaseCommitStatus.success,
+            "failed": BaseCommitStatus.failure,
+            "canceled": BaseCommitStatus.failure,
+        }[event["status"]]
+        self.status_description: str = f"Changed status to {event['detailed_status']}"
+        self.status_check_name: str = "Dist-git MR CI Pipeline"
+        self.status_url: str = (
             f"{event['project_url']}/-/pipelines/{event['pipeline_id']}"
         )
+        self.source: str = event["source"]
+        self.merge_request_url: str = event["merge_request_url"]
 
-        # lazy
-        self._src_git_project: Optional[GitProject] = None
-        self._src_git_mr_id: Optional[int] = None
-        self._src_git_mr: Optional[PullRequest] = None
-        self._status_reporter: Optional[StatusReporter] = None
+    def dist_git_pr_model(self) -> Optional[PullRequestModel]:
+        if self.source == "merge_request_event":
+            # Derive project from merge_request_url because
+            # self.project can be either source or target
+            m = fullmatch(r"(\S+)/-/merge_requests/(\d+)", self.merge_request_url)
+            if m:
+                project = self.service_config.get_project(url=m[1])
+                return PullRequestModel.get_or_create(
+                    pr_id=int(m[2]),
+                    namespace=project.namespace,
+                    repo_name=project.repo,
+                    project_url=m[1],
+                )
+        return None
 
-    @property
-    def src_git_mr_id(self) -> Optional[int]:
-        """
-        https://docs.gitlab.com/ee/user/project/integrations/webhooks.html#pipeline-events
-        suggests, there's a merge_request field containing relation to the (dist-git) MR.
-        Sadly, it's not always true, as in our staging repos,
-        in which case the merge_request info is empty.
-        Luckily, we've stored the src-git MR in the branch name (self.git_ref)
-        from which the dist-git MR is created.
-        See how we set local_pr_branch_suffix in DistGitMRHandler.run()
-        :return: src-git MR number or None if self.git_ref doesn't contain it
-        """
-        if not self._src_git_mr_id:
-            # git_ref is expected in a form {version}-{dist_git_branch}-src-{mr_number}
-            m = fullmatch(r".+-.+-src-(\d+)", self.git_ref)
-            self._src_git_mr_id = int(m[1]) if m else None
-        return self._src_git_mr_id
 
-    @property
-    def src_git_project(self) -> GitProject:
-        if not self._src_git_project:
-            self._src_git_project = self.project.service.get_project(
-                namespace=self.src_git_namespace,
-                repo=self.src_git_name,
-            )
-        return self._src_git_project
+@reacts_to(event=PullRequestFlagPagureEvent)
+class SyncFromPagurePRHandler(SyncFromDistGitPRHandler):
+    task_name = TaskName.sync_from_pagure_pr
 
-    @property
-    def src_git_mr(self) -> PullRequest:
-        if not self._src_git_mr:
-            self._src_git_mr = self.src_git_project.get_pr(self.src_git_mr_id)
-        return self._src_git_mr
-
-    @property
-    def status_reporter(self) -> StatusReporter:
-        if not self._status_reporter:
-            self._status_reporter = StatusReporter.get_instance(
-                project=self.src_git_project,
-                # The head_commit is latest commit of the MR.
-                # If there was a new commit pushed before the pipeline ended, the report
-                # might be incorrect until the new (for the new commit) pipeline finishes.
-                commit_sha=self.src_git_mr.head_commit,
-                pr_id=self.src_git_mr_id,
-            )
-        return self._status_reporter
-
-    def run(self) -> TaskResults:
-        """
-        When a dist-git MR CI Pipeline changes status, create a commit
-        status in the original src-git MR with a link to the Pipeline.
-        """
-        if not self.src_git_mr_id:
-            logger.debug("Not a source-git related pipeline")
-            return TaskResults(success=True, details={})
-
-        pipeline_status_to_base_commit_status = {
-            "success": BaseCommitStatus.success,
-            "failed": BaseCommitStatus.failure,
-            "pending": BaseCommitStatus.pending,
-            "running": BaseCommitStatus.running,
-        }
-
-        # Our account(s) have no access (unless it's manually added) into the fork repos,
-        # to set the commit status (which would look like a Pipeline result)
-        # so the status reporter fallbacks to adding a commit comment.
-        # To not pollute MRs with too many comments, we might later skip
-        # the 'Pipeline is pending/running' events.
-        self.status_reporter.set_status(
-            state=pipeline_status_to_base_commit_status[self.status],
-            description=f"Changed status to {self.detailed_status}.",
-            check_name="Dist-git MR CI Pipeline",
-            url=self.pipeline_url,
+    def __init__(
+        self,
+        package_config: PackageConfig,
+        job_config: JobConfig,
+        event: dict,
+    ):
+        super().__init__(
+            package_config=package_config,
+            job_config=job_config,
+            event=event,
         )
-        return TaskResults(success=True, details={})
+
+        # https://pagure.io/api/0/#pull_requests-tab -> "Flag a pull-request" -> status
+        self.status_state = {
+            "pending": BaseCommitStatus.pending,
+            "success": BaseCommitStatus.success,
+            "error": BaseCommitStatus.error,
+            "failure": BaseCommitStatus.failure,
+            "canceled": BaseCommitStatus.failure,
+        }[event["status"]]
+        self.status_description = event["comment"]
+        self.status_check_name = event["username"]
+        self.status_url = event["url"]
+
+    def dist_git_pr_model(self) -> Optional[PullRequestModel]:
+        return self.data.db_trigger

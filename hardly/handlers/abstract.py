@@ -2,11 +2,9 @@
 # SPDX-License-Identifier: MIT
 
 from enum import Enum
-from logging import getLogger
-
-logger = getLogger(__name__)
 
 
 class TaskName(str, Enum):
     dist_git_pr = "task.run_dist_git_pr_handler"
-    pipeline = "task.run_pipeline_handler"
+    sync_from_gitlab_mr = "task.run_sync_from_gitlab_mr_handler"
+    sync_from_pagure_pr = "task.run_sync_from_pagure_pr_handler"

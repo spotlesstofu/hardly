@@ -1,0 +1,156 @@
+{
+  "topic": "org.fedoraproject.prod.pagure.pull-request.flag.updated",
+  "agent": "zuul",
+  "flag": {
+    "comment": "Jobs result is success",
+    "commit_hash": "d0143f413982f696550bddfda1a0e0cb8466c855",
+    "date_created": "1647865410",
+    "date_updated": "1647866275",
+    "percent": null,
+    "status": "success",
+    "url": "https://fedora.softwarefactory-project.io/zuul/buildset/b6d1c4f0b1db49428bc594cf74307ec6",
+    "user": {
+      "full_url": "https://src.fedoraproject.org/user/zuul",
+      "fullname": "Zuul CI Bot (Fabien Boucher)",
+      "name": "zuul",
+      "url_path": "user/zuul"
+    },
+    "username": "Zuul"
+  },
+  "pullrequest": {
+    "assignee": null,
+    "branch": "rawhide",
+    "branch_from": "1.1.4-rawhide-src-3",
+    "cached_merge_status": "FFORWARD",
+    "closed_at": null,
+    "closed_by": null,
+    "comments": [],
+    "commit_start": "d0143f413982f696550bddfda1a0e0cb8466c855",
+    "commit_stop": "d0143f413982f696550bddfda1a0e0cb8466c855",
+    "date_created": "1647865399",
+    "full_url": "https://src.fedoraproject.org/rpms/python-httpretty/pull-request/25",
+    "id": 25,
+    "initial_comment": "Testing MR for demo purposes\n\n---\n###### Info for package maintainer\nThis MR has been automatically created from\n[this source-git MR](https://gitlab.com/fedora/src/python-httpretty/-/merge_requests/3).",
+    "last_updated": "1647866076",
+    "project": {
+      "access_groups": {
+        "admin": [],
+        "collaborator": [],
+        "commit": [],
+        "ticket": []
+      },
+      "access_users": {
+        "admin": [],
+        "collaborator": [],
+        "commit": [],
+        "owner": ["jpopelka"],
+        "ticket": []
+      },
+      "close_status": [],
+      "custom_keys": [],
+      "date_created": "1501874090",
+      "date_modified": "1565074776",
+      "description": "The python-httpretty rpms",
+      "full_url": "https://src.fedoraproject.org/rpms/python-httpretty",
+      "fullname": "rpms/python-httpretty",
+      "id": 18175,
+      "milestones": {},
+      "name": "python-httpretty",
+      "namespace": "rpms",
+      "parent": null,
+      "priorities": {},
+      "tags": [],
+      "url_path": "rpms/python-httpretty",
+      "user": {
+        "full_url": "https://src.fedoraproject.org/user/jpopelka",
+        "fullname": "Ji\u0159\u00ed Popelka",
+        "name": "jpopelka",
+        "url_path": "user/jpopelka"
+      }
+    },
+    "remote_git": null,
+    "repo_from": {
+      "access_groups": {
+        "admin": [],
+        "collaborator": [],
+        "commit": [],
+        "ticket": []
+      },
+      "access_users": {
+        "admin": [],
+        "collaborator": [],
+        "commit": [],
+        "owner": ["packit"],
+        "ticket": []
+      },
+      "close_status": [],
+      "custom_keys": [],
+      "date_created": "1645546615",
+      "date_modified": "1645546615",
+      "description": "The python-httpretty rpms",
+      "full_url": "https://src.fedoraproject.org/fork/packit/rpms/python-httpretty",
+      "fullname": "forks/packit/rpms/python-httpretty",
+      "id": 55318,
+      "milestones": {},
+      "name": "python-httpretty",
+      "namespace": "rpms",
+      "parent": {
+        "access_groups": {
+          "admin": [],
+          "collaborator": [],
+          "commit": [],
+          "ticket": []
+        },
+        "access_users": {
+          "admin": [],
+          "collaborator": [],
+          "commit": [],
+          "owner": ["jpopelka"],
+          "ticket": []
+        },
+        "close_status": [],
+        "custom_keys": [],
+        "date_created": "1501874090",
+        "date_modified": "1565074776",
+        "description": "The python-httpretty rpms",
+        "full_url": "https://src.fedoraproject.org/rpms/python-httpretty",
+        "fullname": "rpms/python-httpretty",
+        "id": 18175,
+        "milestones": {},
+        "name": "python-httpretty",
+        "namespace": "rpms",
+        "parent": null,
+        "priorities": {},
+        "tags": [],
+        "url_path": "rpms/python-httpretty",
+        "user": {
+          "full_url": "https://src.fedoraproject.org/user/jpopelka",
+          "fullname": "Ji\u0159\u00ed Popelka",
+          "name": "jpopelka",
+          "url_path": "user/jpopelka"
+        }
+      },
+      "priorities": {},
+      "tags": [],
+      "url_path": "fork/packit/rpms/python-httpretty",
+      "user": {
+        "full_url": "https://src.fedoraproject.org/user/packit",
+        "fullname": "Packit Bot",
+        "name": "packit",
+        "url_path": "user/packit"
+      }
+    },
+    "status": "Open",
+    "tags": [],
+    "threshold_reached": null,
+    "title": "Fixes #425. (#436)",
+    "uid": "3a908dd9569d48129bbad0be3b1eb23e",
+    "updated_on": "1647865399",
+    "user": {
+      "full_url": "https://src.fedoraproject.org/user/packit",
+      "fullname": "Packit Bot",
+      "name": "packit",
+      "url_path": "user/packit"
+    }
+  }
+}

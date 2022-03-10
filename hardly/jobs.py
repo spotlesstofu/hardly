@@ -1,15 +1,20 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
+
 from logging import getLogger
 from typing import List
 
-from hardly.handlers import DistGitMRHandler
-from hardly.handlers.distgit import PipelineHandler
+from hardly.handlers import (
+    DistGitMRHandler,
+    SyncFromGitlabMRHandler,
+    SyncFromPagurePRHandler,
+)
 from packit_service.worker.events import (
     Event,
     MergeRequestGitlabEvent,
     PipelineGitlabEvent,
 )
+from packit_service.worker.events.pagure import PullRequestFlagPagureEvent
 from packit_service.worker.handlers import JobHandler
 from packit_service.worker.jobs import SteveJobs
 from packit_service.worker.parser import Parser
@@ -56,7 +61,7 @@ class StreamJobs(SteveJobs):
                 "Skipping private repository check!"
             )
 
-        # DistGitMRHandler handler is (for now) run even the job is not configured in a package.
+        # Handlers are (for now) run even the job is not configured in a package.
         if isinstance(event_object, MergeRequestGitlabEvent):
             DistGitMRHandler.get_signature(
                 event=event_object,
@@ -64,7 +69,13 @@ class StreamJobs(SteveJobs):
             ).apply_async()
 
         if isinstance(event_object, PipelineGitlabEvent):
-            PipelineHandler.get_signature(
+            SyncFromGitlabMRHandler.get_signature(
+                event=event_object,
+                job=None,
+            ).apply_async()
+
+        if isinstance(event_object, PullRequestFlagPagureEvent):
+            SyncFromPagurePRHandler.get_signature(
                 event=event_object,
                 job=None,
             ).apply_async()

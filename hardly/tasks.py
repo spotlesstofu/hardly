@@ -8,7 +8,11 @@ from typing import List
 from celery import Task
 
 from hardly.handlers.abstract import TaskName
-from hardly.handlers.distgit import DistGitMRHandler, PipelineHandler
+from hardly.handlers.distgit import (
+    DistGitMRHandler,
+    SyncFromGitlabMRHandler,
+    SyncFromPagurePRHandler,
+)
 from hardly.jobs import StreamJobs
 from packit_service.celerizer import celery_app
 from packit_service.constants import (
@@ -18,7 +22,6 @@ from packit_service.constants import (
 )
 from packit_service.utils import load_job_config, load_package_config
 from packit_service.worker.result import TaskResults
-
 
 # Let a remote debugger (Visual Studio Code client)
 # access this running instance.
@@ -33,7 +36,6 @@ debugpy.listen(("0.0.0.0", 5678))
 # print("Waiting for debugger attach")
 # debugpy.wait_for_client()
 # debugpy.breakpoint()
-
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +90,23 @@ def run_dist_git_sync_handler(event: dict, package_config: dict, job_config: dic
     return get_handlers_task_results(handler.run_job(), event)
 
 
-@celery_app.task(name=TaskName.pipeline, base=HandlerTaskWithRetry)
-def run_pipeline_handler(event: dict, package_config: dict, job_config: dict):
-    handler = PipelineHandler(
+@celery_app.task(name=TaskName.sync_from_gitlab_mr, base=HandlerTaskWithRetry)
+def run_sync_from_gitlab_mr_handler(
+    event: dict, package_config: dict, job_config: dict
+):
+    handler = SyncFromGitlabMRHandler(
+        package_config=load_package_config(package_config),
+        job_config=load_job_config(job_config),
+        event=event,
+    )
+    return get_handlers_task_results(handler.run_job(), event)
+
+
+@celery_app.task(name=TaskName.sync_from_pagure_pr, base=HandlerTaskWithRetry)
+def run_sync_from_pagure_pr_handler(
+    event: dict, package_config: dict, job_config: dict
+):
+    handler = SyncFromPagurePRHandler(
         package_config=load_package_config(package_config),
         job_config=load_job_config(job_config),
         event=event,
