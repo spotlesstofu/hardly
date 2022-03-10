@@ -10,7 +10,7 @@ services:
 
   postgres:
     container_name: postgres
-    image: quay.io/centos7/postgresql-12-centos7
+    image: quay.io/centos7/postgresql-13-centos7
     environment:
       POSTGRESQL_USER: packit
       POSTGRESQL_PASSWORD: secret-password
@@ -38,8 +38,8 @@ services:
       POSTGRESQL_PASSWORD: secret-password
       POSTGRESQL_HOST: postgres
       POSTGRESQL_DATABASE: packit
-      DISTGIT_URL: https://gitlab.com/
-      DISTGIT_NAMESPACE: packit-service/rpms
+      DISTGIT_URL: ${DISTGIT_URL}
+      DISTGIT_NAMESPACE: ${DISTGIT_NAMESPACE}
       CELERY_RETRY_LIMIT: 0
       PUSHGATEWAY_ADDRESS: ""
     volumes:
@@ -47,9 +47,9 @@ services:
       - ../ogr/ogr:/usr/local/lib/python3.9/site-packages/ogr:ro,z
       - ../packit/packit:/usr/local/lib/python3.9/site-packages/packit:ro,z
       - ../packit-service/packit_service:/usr/local/lib/python3.9/site-packages/packit_service:ro,z
-      - ./secrets/stream/dev/packit-service.yaml:/home/packit/.config/packit-service.yaml:ro,z
-      - ./secrets/stream/dev/id_rsa.pub:/packit-ssh/id_rsa.pub:ro,z
-      - ./secrets/stream/dev/id_rsa:/packit-ssh/id_rsa:ro,z
+      - ./secrets/${SERVICE}/dev/packit-service.yaml:/home/packit/.config/packit-service.yaml:ro,z
+      - ./secrets/${SERVICE}/dev/id_rsa.pub:/packit-ssh/id_rsa.pub:ro,z
+      - ./secrets/${SERVICE}/dev/id_rsa:/packit-ssh/id_rsa:ro,z
     user: "1024"
 
   service:
@@ -72,10 +72,7 @@ services:
       - ../ogr/ogr:/usr/local/lib/python3.9/site-packages/ogr:ro,z
       - ../packit/packit:/usr/local/lib/python3.9/site-packages/packit:ro,z
       - ../packit-service/packit_service:/usr/local/lib/python3.9/site-packages/packit_service:ro,z
-      #      - ./files/packit-httpd.conf:/etc/httpd/conf.d/packit-httpd.conf:ro,z
-      # There's no secrets/ by default. You have to create (or symlink to other dir) it yourself.
-      # Make sure to set `command_handler: local` since there is no kube in d-c
-      - ./secrets/stream/dev/packit-service.yaml:/home/packit/.config/packit-service.yaml:ro,z
-      - ./secrets/stream/dev/fullchain.pem:/secrets/fullchain.pem:ro,z
-      - ./secrets/stream/dev/privkey.pem:/secrets/privkey.pem:ro,z
+      - ./secrets/${SERVICE}/dev/packit-service.yaml:/home/packit/.config/packit-service.yaml:ro,z
+      - ./secrets/${SERVICE}/dev/fullchain.pem:/secrets/fullchain.pem:ro,z
+      - ./secrets/${SERVICE}/dev/privkey.pem:/secrets/privkey.pem:ro,z
     user: "1024"
