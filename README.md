@@ -35,13 +35,17 @@ but is expected to eventually follow [this workflow](https://github.com/packit/r
 
 [Similar to packit-service](https://github.com/packit/packit-service/blob/main/CONTRIBUTING.md#running-packit-service-locally)
 we have a [docker-compose.yml](docker-compose.yml) for fast prototyping.
-You might need to tweak it a bit (especially the volume mounts there) before running it,
-because it expects that you have:
 
-- secrets/stream/dev/ populated (linked) with secrets mostly taken from our internal repo.
+It expects, that you have:
+
+- [.env.fedora-source-git](.env.fedora-source-git) or [env.stream](.env.stream)
+  copied or symlinked (`ln -s .env.fedora-source-git .env`) to `.env`.
+- `secrets/fedora-source-git/dev/` or `secrets/stream/dev/` populated (linked)
+  with secrets mostly taken from our internal repo.
   "Mostly", because you should use your credential where possible.
-- ../ogr/, ../packit/ and ../packit-service/ dirs with the respected repos cloned.
-  Those are mounted into the container so you don't have to rebuild the image each time you change anything in them.
+- `../ogr/`, `../packit/` and `../packit-service/` dirs with the respected repos cloned.
+  Those are mounted into the container, so you don't have to
+  rebuild the image each time you change anything in them.
 
 Follow the [packit-service's guide](https://github.com/packit/packit-service/blob/main/CONTRIBUTING.md#running-packit-service-locally)
 for the other settings. Once you have it running (and see no errors), you can test (uses [HTTPie](https://httpie.io)) the webhook with:
