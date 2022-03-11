@@ -19,6 +19,22 @@ from packit_service.constants import (
 from packit_service.utils import load_job_config, load_package_config
 from packit_service.worker.result import TaskResults
 
+
+# Let a remote debugger (Visual Studio Code client)
+# access this running instance.
+import debugpy
+
+# Allow other computers to attach to debugpy at this IP address and port.
+debugpy.listen(("0.0.0.0", 5678))
+
+# Uncomment the following lines if you want to
+# pause the program until a remote debugger is attached
+
+# print("Waiting for debugger attach")
+# debugpy.wait_for_client()
+# debugpy.breakpoint()
+
+
 logger = logging.getLogger(__name__)
 
 # debug logs of these are super-duper verbose

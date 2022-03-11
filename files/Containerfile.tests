@@ -16,5 +16,8 @@ COPY files/recipe-tests.yaml ./files/
 RUN ansible-playbook -vv -c local -i localhost, files/recipe-tests.yaml && \
     dnf clean all
 
+# Allow remote debugging
+RUN pip install --upgrade debugpy
+
 # Naive, but works for now
 COPY * ./
