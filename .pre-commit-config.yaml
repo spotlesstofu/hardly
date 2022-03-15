@@ -48,5 +48,5 @@ repos:
     hooks:
       - id: check-rebase
         args:
-          - git://github.com/packit/hardly.git
+          - https://github.com/packit/hardly.git
         stages: [manual, push]
