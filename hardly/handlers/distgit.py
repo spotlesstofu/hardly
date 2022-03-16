@@ -21,7 +21,7 @@ from packit_service.worker.handlers.abstract import (
 )
 from packit_service.worker.reporting import StatusReporter, BaseCommitStatus
 from packit_service.worker.result import TaskResults
-from packit_service.models import SrcGitPRDistGitPRModel
+from packit_service.models import SourceGitPRDistGitPRModel
 
 logger = getLogger(__name__)
 
@@ -108,11 +108,11 @@ dist-git as it is still the authoritative source for the distribution.
 We want to run checks there only so they don't need to be reimplemented in source-git as well."""
             self.project.get_pr(int(self.mr_identifier)).comment(comment)
 
-            SrcGitPRDistGitPRModel.get_or_create(
+            SourceGitPRDistGitPRModel.get_or_create(
                 self.mr_identifier,
-                source_project.namespace,
-                source_project.repo,
-                source_project.get_web_url(),
+                self.project.namespace,
+                self.project.repo,
+                self.project.get_web_url(),
                 dg_mr.id,
                 dg_mr.target_project.namespace,
                 dg_mr.target_project.repo,
