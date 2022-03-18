@@ -46,9 +46,9 @@ services:
       PUSHGATEWAY_ADDRESS: ""
     volumes:
       - ./hardly:/src/hardly:ro,z
-      - ../ogr/ogr:/usr/local/lib/python3.9/site-packages/ogr:ro,z
-      - ../packit/packit:/usr/local/lib/python3.9/site-packages/packit:ro,z
-      - ../packit-service/packit_service:/usr/local/lib/python3.9/site-packages/packit_service:ro,z
+      - ../ogr/ogr:/usr/local/lib/python3.10/site-packages/ogr:ro,z
+      - ../packit/packit:/usr/local/lib/python3.10/site-packages/packit:ro,z
+      - ../packit-service/packit_service:/usr/local/lib/python3.10/site-packages/packit_service:ro,z
       - ./secrets/${SERVICE}/dev/packit-service.yaml:/home/packit/.config/packit-service.yaml:ro,z
       - ./secrets/${SERVICE}/dev/id_rsa.pub:/packit-ssh/id_rsa.pub:ro,z
       - ./secrets/${SERVICE}/dev/id_rsa:/packit-ssh/id_rsa:ro,z
@@ -71,9 +71,9 @@ services:
       POSTGRESQL_HOST: postgres
       POSTGRESQL_DATABASE: packit
     volumes:
-      - ../ogr/ogr:/usr/local/lib/python3.9/site-packages/ogr:ro,z
-      - ../packit/packit:/usr/local/lib/python3.9/site-packages/packit:ro,z
-      - ../packit-service/packit_service:/usr/local/lib/python3.9/site-packages/packit_service:ro,z
+      - ../ogr/ogr:/usr/local/lib/python3.10/site-packages/ogr:ro,z
+      - ../packit/packit:/usr/local/lib/python3.10/site-packages/packit:ro,z
+      - ../packit-service/packit_service:/usr/local/lib/python3.10/site-packages/packit_service:ro,z
       - ../packit-service/alembic:/src/alembic:ro,z
       - ./secrets/${SERVICE}/dev/packit-service.yaml:/home/packit/.config/packit-service.yaml:ro,z
       - ./secrets/${SERVICE}/dev/fullchain.pem:/secrets/fullchain.pem:ro,z
