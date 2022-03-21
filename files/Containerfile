@@ -23,4 +23,7 @@ RUN git rev-parse HEAD >/.hardly.git.commit.hash \
     && git show --quiet --format=%B HEAD >/.hardly.git.commit.message \
     && ansible-playbook -vv -c local -i localhost, files/recipe-hardly.yaml
 
+# Allow remote debugging
+RUN pip install --upgrade debugpy
+
 COPY hardly/ ./hardly/
