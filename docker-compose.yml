@@ -79,3 +79,20 @@ services:
       - ./secrets/${SERVICE}/dev/fullchain.pem:/secrets/fullchain.pem:ro,z
       - ./secrets/${SERVICE}/dev/privkey.pem:/secrets/privkey.pem:ro,z
     user: "1024"
+
+  fedora-messaging:
+    container_name: fedora-messaging
+    # If you want to test your changes in packit-service-fedmsg,
+    # run 'make build' in cloned packit-service-fedmsg
+    # and change this to :dev
+    image: quay.io/packit/packit-service-fedmsg:stg
+    depends_on:
+      - redis
+    environment:
+      DEPLOYMENT: dev
+      FEDORA_MESSAGING_CONF: /home/packit/.config/fedora.toml
+      REDIS_SERVICE_HOST: redis
+    volumes:
+      # get it from secrets
+      - ./secrets/${SERVICE}/dev/fedora.toml:/home/packit/.config/fedora.toml:ro,Z
+    user: "1024"
