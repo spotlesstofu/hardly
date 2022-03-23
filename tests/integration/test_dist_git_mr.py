@@ -1,6 +1,8 @@
 # Copyright Contributors to the Packit project.
 # SPDX-License-Identifier: MIT
 from flexmock import flexmock
+
+from hardly.tasks import run_dist_git_sync_handler
 from packit.api import PackitAPI
 from packit.config.job_config import JobConfigTriggerType
 from packit.local_project import LocalProject
@@ -11,8 +13,6 @@ from packit_service.service.db_triggers import AddPullRequestDbTrigger
 from packit_service.utils import dump_package_config
 from packit_service.worker.monitoring import Pushgateway
 from packit_service.worker.parser import Parser
-
-from hardly.tasks import run_dist_git_sync_handler
 from tests.spellbook import first_dict_value
 
 

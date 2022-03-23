@@ -1,0 +1,110 @@
+{
+  "object_kind": "pipeline",
+  "object_attributes": {
+    "id": 497396723,
+    "ref": "11.3.0-c9s-src-15",
+    "tag": false,
+    "sha": "5e8406e38c0bc7bc105e291c408913971126fe40",
+    "before_sha": "0000000000000000000000000000000000000000",
+    "source": "merge_request_event",
+    "status": "failed",
+    "detailed_status": "failed",
+    "stages": ["test"],
+    "created_at": "2022-03-21 17:00:31 UTC",
+    "finished_at": "2022-03-21 17:00:46 UTC",
+    "duration": 13,
+    "queued_duration": 1,
+    "variables": []
+  },
+  "merge_request": {
+    "id": 120325047,
+    "iid": 25,
+    "title": "dummy",
+    "source_branch": "11.3.0-c9s-src-15",
+    "source_project_id": 30219532,
+    "target_branch": "c9s",
+    "target_project_id": 28084873,
+    "state": "opened",
+    "merge_status": "can_be_merged",
+    "url": "https://gitlab.com/packit-service/rpms/open-vm-tools/-/merge_requests/25"
+  },
+  "user": {
+    "id": 6307839,
+    "name": "Packit Stage Service",
+    "username": "packit-as-a-service-stg",
+    "avatar_url": "https://gitlab.com/uploads/-/system/user/avatar/6307839/avatar.png",
+    "email": "[REDACTED]"
+  },
+  "project": {
+    "id": 30219532,
+    "name": "open-vm-tools",
+    "description": "Copy of https://gitlab.com/redhat/centos-stream/rpms/open-vm-tools for testing purposes",
+    "web_url": "https://gitlab.com/packit-as-a-service-stg/open-vm-tools",
+    "avatar_url": null,
+    "git_ssh_url": "git@gitlab.com:packit-as-a-service-stg/open-vm-tools.git",
+    "git_http_url": "https://gitlab.com/packit-as-a-service-stg/open-vm-tools.git",
+    "namespace": "Packit Stage Service",
+    "visibility_level": 20,
+    "path_with_namespace": "packit-as-a-service-stg/open-vm-tools",
+    "default_branch": "c9s",
+    "ci_config_path": ""
+  },
+  "commit": {
+    "id": "5e8406e38c0bc7bc105e291c408913971126fe40",
+    "message": "dummy\n\nFrom-source-git-commit: 06f212c897c62ec08fc6c6ee2cf6df8789cd3218\n\n---\n###### Info for package maintainer\nThis MR has been automatically created from\n[this source-git MR](https://gitlab.com/packit-service/src/open-vm-tools/-/merge_requests/15).\nPlease review the contribution and once you are comfortable with the content,\nyou should trigger a CI pipeline run via `Pipelines → Run pipeline`.\n\nSigned-off-by: Packit Service <user-cont-team+packit-service@redhat.com>\n",
+    "title": "dummy",
+    "timestamp": "2022-03-21T17:00:24+00:00",
+    "url": "https://gitlab.com/packit-as-a-service-stg/open-vm-tools/-/commit/5e8406e38c0bc7bc105e291c408913971126fe40",
+    "author": {
+      "name": "Packit Service",
+      "email": "user-cont-team+packit-service@redhat.com"
+    }
+  },
+  "builds": [
+    {
+      "id": 2230338033,
+      "stage": "test",
+      "name": "check-gitbz",
+      "status": "failed",
+      "created_at": "2022-03-21 17:00:31 UTC",
+      "started_at": "2022-03-21 17:00:32 UTC",
+      "finished_at": "2022-03-21 17:00:46 UTC",
+      "duration": 13.423369,
+      "queued_duration": 0.735017,
+      "when": "on_success",
+      "manual": false,
+      "allow_failure": false,
+      "user": {
+        "id": 6307839,
+        "name": "Packit Stage Service",
+        "username": "packit-as-a-service-stg",
+        "avatar_url": "https://gitlab.com/uploads/-/system/user/avatar/6307839/avatar.png",
+        "email": "[REDACTED]"
+      },
+      "runner": {
+        "id": 12270845,
+        "description": "1-green.shared.runners-manager.gitlab.com/default",
+        "runner_type": "instance_type",
+        "active": true,
+        "is_shared": true,
+        "tags": [
+          "gce",
+          "east-c",
+          "linux",
+          "ruby",
+          "mysql",
+          "postgres",
+          "mongo",
+          "git-annex",
+          "shared",
+          "docker"
+        ]
+      },
+      "artifacts_file": {
+        "filename": null,
+        "size": null
+      },
+      "environment": null
+    }
+  ]
+}
