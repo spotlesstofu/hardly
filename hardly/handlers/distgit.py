@@ -41,15 +41,15 @@ class DistGitMRHandler(JobHandler):
             job_config=job_config,
             event=event,
         )
-        self.mr_identifier = event.get("identifier")
-        self.mr_title = event.get("title")
-        self.mr_description = event.get("description")
-        self.mr_url = event.get("url")
-        self.source_project_url = event.get("source_project_url")
+        self.mr_identifier = event["identifier"]
+        self.mr_title = event["title"]
+        self.mr_description = event["description"]
+        self.mr_url = event["url"]
+        self.source_project_url = event["source_project_url"]
         self.target_repo = (
-            event.get("target_repo_namespace") + "/" + event.get("target_repo_name")
+            f"{event['target_repo_namespace']}/{event['target_repo_name']}"
         )
-        self.target_repo_branch = event.get("target_repo_branch")
+        self.target_repo_branch = event["target_repo_branch"]
 
     def run(self) -> TaskResults:
         """
@@ -84,7 +84,7 @@ class DistGitMRHandler(JobHandler):
         dg_mr_info = f"""###### Info for package maintainer
 This MR has been automatically created from
 [this source-git MR]({self.mr_url})."""
-        if getenv("PROJECT") and getenv("PROJECT").startswith("stream"):
+        if getenv("PROJECT", "").startswith("stream"):
             dg_mr_info += """
 Please review the contribution and once you are comfortable with the content,
 you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
