@@ -13,14 +13,16 @@ from packit_service.service.db_triggers import AddPullRequestDbTrigger
 from packit_service.utils import dump_package_config
 from packit_service.worker.monitoring import Pushgateway
 from packit_service.worker.parser import Parser
+from ogr.services.gitlab import GitlabProject
 from tests.spellbook import first_dict_value
 
 
 def test_dist_git_mr(mr_event):
-    source_git_yaml = {
+    source_git_yaml = """ {
         "upstream_project_url": "https://github.com/vmware/open-vm-tools.git",
         "upstream_ref": "stable-11.3.0",
         "downstream_package_name": "open-vm-tools",
+        "downstream_branch_name": "another-rawhide",
         "specfile_path": ".distro/open-vm-tools.spec",
         "patch_generation_ignore_paths": [".distro"],
         "patch_generation_patch_id_digits": 1,
@@ -45,6 +47,7 @@ def test_dist_git_mr(mr_event):
             }
         ],
     }
+    """
     version = "11.3.0"
 
     trigger = flexmock(
@@ -58,6 +61,9 @@ def test_dist_git_mr(mr_event):
         get_file_content=lambda path, ref: source_git_yaml,
         full_repo_name="jpopelka/src-open-vm-tools",
     )
+    flexmock(GitlabProject).should_receive("get_file_content").and_return(
+        source_git_yaml
+    )
     lp = flexmock(
         LocalProject, refresh_the_arguments=lambda: None, checkout_ref=lambda ref: None
     )
@@ -70,6 +76,7 @@ def test_dist_git_mr(mr_event):
     flexmock(ServiceConfig).should_receive("get_service_config").and_return(config)
     flexmock(Pushgateway).should_receive("push").once().and_return()
     flexmock(PackitAPI).should_receive("sync_release").with_args(
+        dist_git_branch="another-rawhide",
         version=version,
         add_new_sources=False,
         title="Yet another testing MR",

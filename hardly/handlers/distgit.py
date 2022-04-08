@@ -89,6 +89,7 @@ This MR has been automatically created from
 Please review the contribution and once you are comfortable with the content,
 you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
         dg_mr = self.api.sync_release(
+            dist_git_branch=self.package_config.downstream_branch_name,
             version=self.api.up.get_specfile_version(),
             add_new_sources=False,
             title=self.mr_title,
