@@ -12,6 +12,7 @@ from packit.api import PackitAPI
 from packit.config.job_config import JobConfig
 from packit.config.package_config import PackageConfig
 from packit.local_project import LocalProject
+from packit.exceptions import PackitGitException
 from packit_service.models import PullRequestModel, SourceGitPRDistGitPRModel
 from packit_service.worker.events import MergeRequestGitlabEvent, PipelineGitlabEvent
 from packit_service.worker.events.pagure import PullRequestFlagPagureEvent
@@ -51,6 +52,26 @@ class DistGitMRHandler(JobHandler):
         )
         self.target_repo_branch = event["target_repo_branch"]
 
+    def get_dist_git_branch(self) -> str:
+        """Get the downstream repo branch name where to open the MR.
+        If it exist otherwise raise an exception.
+
+        Returns:
+            The downstream repo branch name
+        Raises:
+            PackitGitException: if the branch is not found
+        """
+        dist_git_branch = (
+            self.package_config.downstream_branch_name or self.target_repo_branch
+        )
+        if dist_git_branch not in self.api.dg.local_project.git_project.get_branches():
+            msg = f"""
+Downstream {self.target_repo}:{dist_git_branch} branch does not exist.
+"""
+            raise PackitGitException(msg)
+
+        return dist_git_branch
+
     def run(self) -> TaskResults:
         """
         If user creates a merge-request on the source-git repository,
@@ -88,16 +109,28 @@ This MR has been automatically created from
             dg_mr_info += """
 Please review the contribution and once you are comfortable with the content,
 you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
-        dg_mr = self.api.sync_release(
-            version=self.api.up.get_specfile_version(),
-            add_new_sources=False,
-            title=self.mr_title,
-            description=f"{self.mr_description}\n\n---\n{dg_mr_info}",
-            sync_default_files=False,
-            # we rely on this in PipelineHandler below
-            local_pr_branch_suffix=f"src-{self.mr_identifier}",
-            mark_commit_origin=True,
-        )
+
+        dist_git_branch = None
+        try:
+            dist_git_branch = self.get_dist_git_branch()
+        except PackitGitException as ex:
+            msg = str(ex)
+            self.project.get_pr(int(self.mr_identifier)).comment(msg)
+            logger.debug(msg)
+
+        dg_mr = None
+        if dist_git_branch:
+            dg_mr = self.api.sync_release(
+                dist_git_branch=dist_git_branch,
+                version=self.api.up.get_specfile_version(),
+                add_new_sources=False,
+                title=self.mr_title,
+                description=f"{self.mr_description}\n\n---\n{dg_mr_info}",
+                sync_default_files=False,
+                # we rely on this in PipelineHandler below
+                local_pr_branch_suffix=f"src-{self.mr_identifier}",
+                mark_commit_origin=True,
+            )
 
         if dg_mr:
             comment = f"""[Dist-git MR #{dg_mr.id}]({dg_mr.url})
