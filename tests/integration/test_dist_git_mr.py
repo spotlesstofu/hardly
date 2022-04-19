@@ -67,30 +67,14 @@ source_git_yaml = """ {
 """,
                 """
     "downstream_package_name": "open-vm-tools",
-    "downstream_branch_name": "another-rawhide",
-""",
-            ),
-            ["master", "another-rawhide"],
-            "another-rawhide",
-            False,
-            id="Use custom downstream branch name",
-        ),
-        pytest.param(
-            source_git_yaml.replace(
-                """
-    "downstream_package_name": "open-vm-tools",
-""",
-                """
-    "downstream_package_name": "open-vm-tools",
-    "downstream_branch_name": "unknown",
 """,
             ),
             [
                 "master",
             ],
-            "unknown",
+            "c9s",
             True,
-            id="Create new downstream branch and notify user",
+            id="Notify user that branch does not exist",
         ),
     ],
 )
