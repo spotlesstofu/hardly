@@ -7,24 +7,24 @@
   hosts: all
   tasks:
     - name: Install podman
-      dnf:
+      ansible.builtin.dnf:
         name:
           - podman
         state: present
       become: true
     # Fix the SELinux context for podman
     - name: Create ~/.local/share/
-      file:
+      ansible.builtin.file:
         path: ~/.local/share/
         state: directory
-        recurse: yes
+        recurse: true
         setype: data_home_t
     - name: Build test image
-      command: "make test-image"
+      ansible.builtin.command: "make test-image"
       args:
         chdir: "{{ zuul.project.src_dir }}"
     - name: Run tests within a container
-      command: "make check-in-container"
+      ansible.builtin.command: "make check-in-container"
       args:
         chdir: "{{ zuul.project.src_dir }}"
       environment:
