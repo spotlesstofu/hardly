@@ -8,6 +8,7 @@ from re import fullmatch
 from typing import Optional
 
 from hardly.handlers.abstract import TaskName
+from ogr.abstract import PullRequest
 from packit.api import PackitAPI
 from packit.config.job_config import JobConfig
 from packit.config.package_config import PackageConfig
@@ -51,6 +52,40 @@ class DistGitMRHandler(JobHandler):
         )
         self.target_repo_branch = event["target_repo_branch"]
 
+        # lazy
+        self._source_git_pr_model = None
+        self._dist_git_pr_model = None
+        self._dist_git_pr = None
+
+    @property
+    def source_git_pr_model(self) -> PullRequestModel:
+        if not self._source_git_pr_model:
+            self._source_git_pr_model = PullRequestModel.get_or_create(
+                pr_id=self.mr_identifier,
+                namespace=self.project.namespace,
+                repo_name=self.project.repo,
+                project_url=self.project.get_web_url(),
+            )
+        return self._source_git_pr_model
+
+    @property
+    def dist_git_pr_model(self) -> Optional[PullRequestModel]:
+        if not self._dist_git_pr_model:
+            if sg_dg := SourceGitPRDistGitPRModel.get_by_source_git_id(
+                self.source_git_pr_model.id
+            ):
+                self._dist_git_pr_model = sg_dg.dist_git_pull_request
+        return self._dist_git_pr_model
+
+    @property
+    def dist_git_pr(self) -> Optional[PullRequest]:
+        if not self._dist_git_pr and self.dist_git_pr_model:
+            dist_git_project = self.service_config.get_project(
+                url=self.dist_git_pr_model.project.project_url
+            )
+            self._dist_git_pr = dist_git_project.get_pr(self.dist_git_pr_model.pr_id)
+        return self._dist_git_pr
+
     def run(self) -> TaskResults:
         """
         If user creates a merge-request on the source-git repository,
@@ -67,7 +102,17 @@ class DistGitMRHandler(JobHandler):
             logger.debug("No package config found.")
             return TaskResults(success=True, details={})
 
-        logger.debug(f"About to create a dist-git MR from source-git MR {self.mr_url}")
+        if self.dist_git_pr_model:
+            # The source-git PR was probably closed and then reopened
+            logger.info(
+                f"{self.source_git_pr_model} already has corresponding {self.dist_git_pr_model}"
+            )
+            if self.dist_git_pr:
+                # TODO: reopen the corresponding dist-git PR as well if it's already closed
+                # https://github.com/packit/ogr/pull/714
+                comment = f"[Source-git MR]({self.mr_url}) has been reopened."
+                self.dist_git_pr.comment(comment)
+            return TaskResults(success=True, details={})
 
         source_project = self.service_config.get_project(url=self.source_project_url)
         self.local_project = LocalProject(
@@ -104,6 +149,9 @@ Downstream {self.target_repo}:{self.target_repo_branch} branch does not exist.
 
         dg_mr = None
         if dist_git_branch:
+            logger.info(
+                f"About to create a dist-git MR from source-git MR {self.mr_url}"
+            )
             dg_mr = self.api.sync_release(
                 dist_git_branch=dist_git_branch,
                 version=self.api.up.get_specfile_version(),

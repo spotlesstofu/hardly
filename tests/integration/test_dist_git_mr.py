@@ -10,6 +10,7 @@ from packit.local_project import LocalProject
 from packit.upstream import Upstream
 from packit_service.config import ServiceConfig
 from packit_service.constants import SANDCASTLE_WORK_DIR
+from packit_service.models import PullRequestModel, SourceGitPRDistGitPRModel
 from packit_service.service.db_triggers import AddPullRequestDbTrigger
 from packit_service.utils import dump_package_config
 from packit_service.worker.monitoring import Pushgateway
@@ -97,6 +98,14 @@ def test_dist_git_mr(
     flexmock(GitlabProject).should_receive("get_file_content").and_return(
         source_git_yaml
     )
+
+    flexmock(PullRequestModel).should_receive("get_or_create").and_return(
+        flexmock(id=1)
+    )
+    flexmock(SourceGitPRDistGitPRModel).should_receive(
+        "get_by_source_git_id"
+    ).and_return(None)
+
     lp = flexmock(
         LocalProject, refresh_the_arguments=lambda: None, checkout_ref=lambda ref: None
     )
