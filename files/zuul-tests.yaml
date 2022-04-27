@@ -12,6 +12,13 @@
           - podman
         state: present
       become: true
+    # Fix the SELinux context for podman
+    - name: Create ~/.local/share/
+      file:
+        path: ~/.local/share/
+        state: directory
+        recurse: yes
+        setype: data_home_t
     - name: Build test image
       command: "make test-image"
       args:
