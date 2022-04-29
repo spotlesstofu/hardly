@@ -56,6 +56,7 @@ class DistGitMRHandler(JobHandler):
         self._source_git_pr_model = None
         self._dist_git_pr_model = None
         self._dist_git_pr = None
+        self._packit = None
 
     @property
     def source_git_pr_model(self) -> PullRequestModel:
@@ -86,6 +87,25 @@ class DistGitMRHandler(JobHandler):
             self._dist_git_pr = dist_git_project.get_pr(self.dist_git_pr_model.pr_id)
         return self._dist_git_pr
 
+    @property
+    def packit(self) -> PackitAPI:
+        if not self._packit:
+            source_project = self.service_config.get_project(
+                url=self.source_project_url
+            )
+            local_project = LocalProject(
+                git_project=source_project,
+                ref=self.data.commit_sha,
+                working_dir=self.service_config.command_handler_work_dir,
+            )
+
+            self._packit = PackitAPI(
+                config=self.service_config,
+                package_config=self.package_config,
+                upstream_local_project=local_project,
+            )
+        return self._packit
+
     def run(self) -> TaskResults:
         """
         If user creates a merge-request on the source-git repository,
@@ -114,18 +134,6 @@ class DistGitMRHandler(JobHandler):
                 self.dist_git_pr.comment(comment)
             return TaskResults(success=True, details={})
 
-        source_project = self.service_config.get_project(url=self.source_project_url)
-        self.local_project = LocalProject(
-            git_project=source_project,
-            ref=self.data.commit_sha,
-            working_dir=self.service_config.command_handler_work_dir,
-        )
-
-        self.api = PackitAPI(
-            config=self.service_config,
-            package_config=self.package_config,
-            upstream_local_project=self.local_project,
-        )
         dg_mr_info = f"""###### Info for package maintainer
 This MR has been automatically created from
 [this source-git MR]({self.mr_url})."""
@@ -136,7 +144,7 @@ you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
 
         if (
             self.target_repo_branch
-            in self.api.dg.local_project.git_project.get_branches()
+            in self.packit.dg.local_project.git_project.get_branches()
         ):
             dist_git_branch = self.target_repo_branch
         else:
@@ -152,9 +160,9 @@ Downstream {self.target_repo}:{self.target_repo_branch} branch does not exist.
             logger.info(
                 f"About to create a dist-git MR from source-git MR {self.mr_url}"
             )
-            dg_mr = self.api.sync_release(
+            dg_mr = self.packit.sync_release(
                 dist_git_branch=dist_git_branch,
-                version=self.api.up.get_specfile_version(),
+                version=self.packit.up.get_specfile_version(),
                 add_new_sources=False,
                 title=self.mr_title,
                 description=f"{self.mr_description}\n\n---\n{dg_mr_info}",
