@@ -122,6 +122,15 @@ class DistGitMRHandler(JobHandler):
             logger.debug("No package config found.")
             return TaskResults(success=True, details={})
 
+        if (
+            self.target_repo_branch
+            not in self.packit.dg.local_project.git_project.get_branches()
+        ):
+            msg = f"Downstream {self.target_repo}:{self.target_repo_branch} branch does not exist."
+            self.project.get_pr(int(self.mr_identifier)).comment(msg)
+            logger.info(msg)
+            return TaskResults(success=True)
+
         if self.dist_git_pr_model:
             # The source-git PR was probably closed and then reopened
             logger.info(
@@ -142,37 +151,18 @@ This MR has been automatically created from
 Please review the contribution and once you are comfortable with the content,
 you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
 
-        if (
-            self.target_repo_branch
-            in self.packit.dg.local_project.git_project.get_branches()
+        logger.info(f"About to create a dist-git MR from source-git MR {self.mr_url}")
+        if dg_mr := self.packit.sync_release(
+            dist_git_branch=self.target_repo_branch,
+            version=self.packit.up.get_specfile_version(),
+            add_new_sources=False,
+            title=self.mr_title,
+            description=f"{self.mr_description}\n\n---\n{dg_mr_info}",
+            sync_default_files=False,
+            # we rely on this in PipelineHandler below
+            local_pr_branch_suffix=f"src-{self.mr_identifier}",
+            mark_commit_origin=True,
         ):
-            dist_git_branch = self.target_repo_branch
-        else:
-            msg = f"""
-Downstream {self.target_repo}:{self.target_repo_branch} branch does not exist.
-"""
-            self.project.get_pr(int(self.mr_identifier)).comment(msg)
-            logger.debug(msg)
-            dist_git_branch = None
-
-        dg_mr = None
-        if dist_git_branch:
-            logger.info(
-                f"About to create a dist-git MR from source-git MR {self.mr_url}"
-            )
-            dg_mr = self.packit.sync_release(
-                dist_git_branch=dist_git_branch,
-                version=self.packit.up.get_specfile_version(),
-                add_new_sources=False,
-                title=self.mr_title,
-                description=f"{self.mr_description}\n\n---\n{dg_mr_info}",
-                sync_default_files=False,
-                # we rely on this in PipelineHandler below
-                local_pr_branch_suffix=f"src-{self.mr_identifier}",
-                mark_commit_origin=True,
-            )
-
-        if dg_mr:
             comment = f"""[Dist-git MR #{dg_mr.id}]({dg_mr.url})
 has been created for sake of triggering the downstream checks.
 It ensures that your contribution is valid and can be incorporated in
