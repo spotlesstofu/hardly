@@ -15,6 +15,7 @@ from packit.config.package_config import PackageConfig
 from packit.local_project import LocalProject
 from packit_service.models import PullRequestModel, SourceGitPRDistGitPRModel
 from packit_service.worker.events import MergeRequestGitlabEvent, PipelineGitlabEvent
+from packit_service.worker.events.enums import GitlabEventAction
 from packit_service.worker.events.pagure import PullRequestFlagPagureEvent
 from packit_service.worker.handlers import JobHandler
 from packit_service.worker.handlers.abstract import (
@@ -42,6 +43,7 @@ class DistGitMRHandler(JobHandler):
             job_config=job_config,
             event=event,
         )
+        self.action = event["action"]
         self.mr_identifier = event["identifier"]
         self.mr_title = event["title"]
         self.mr_description = event["description"]
@@ -116,11 +118,11 @@ class DistGitMRHandler(JobHandler):
                 "Not creating a dist-git MR from "
                 f"{self.target_repo}:{self.target_repo_branch}"
             )
-            return TaskResults(success=True, details={})
+            return TaskResults(success=True)
 
         if not self.package_config:
             logger.debug("No package config found.")
-            return TaskResults(success=True, details={})
+            return TaskResults(success=True)
 
         if (
             self.target_repo_branch
@@ -132,16 +134,23 @@ class DistGitMRHandler(JobHandler):
             return TaskResults(success=True)
 
         if self.dist_git_pr_model:
-            # The source-git PR was probably closed and then reopened
             logger.info(
                 f"{self.source_git_pr_model} already has corresponding {self.dist_git_pr_model}"
             )
             if self.dist_git_pr:
-                # TODO: reopen the corresponding dist-git PR as well if it's already closed
-                # https://github.com/packit/ogr/pull/714
-                comment = f"[Source-git MR]({self.mr_url}) has been reopened."
-                self.dist_git_pr.comment(comment)
-            return TaskResults(success=True, details={})
+                if self.action == GitlabEventAction.closed.value:
+                    msg = f"[Source-git MR]({self.mr_url}) has been closed."
+                    self.dist_git_pr.close()
+                elif self.action == GitlabEventAction.reopen.value:
+                    msg = f"[Source-git MR]({self.mr_url}) has been reopened."
+                    # https://github.com/packit/ogr/pull/714
+                    # self.dist_git_pr.reopen()
+                else:
+                    logger.error(f"Unknown action {self.action}")
+                    return TaskResults(success=False)
+                logger.info(msg)
+                self.dist_git_pr.comment(msg)
+            return TaskResults(success=True)
 
         dg_mr_info = f"""###### Info for package maintainer
 This MR has been automatically created from
@@ -227,12 +236,12 @@ class SyncFromDistGitPRHandler(JobHandler):
         """
         if not (dist_git_pr_model := self.dist_git_pr_model()):
             logger.debug("No dist-git PR model.")
-            return TaskResults(success=True, details={})
+            return TaskResults(success=True)
         if not (
             sg_dg := SourceGitPRDistGitPRModel.get_by_dist_git_id(dist_git_pr_model.id)
         ):
             logger.debug(f"Source-git PR for {dist_git_pr_model} not found.")
-            return TaskResults(success=True, details={})
+            return TaskResults(success=True)
 
         source_git_pr_model = sg_dg.source_git_pull_request
         source_git_project = self.service_config.get_project(
@@ -260,7 +269,7 @@ class SyncFromDistGitPRHandler(JobHandler):
             check_name=self.status_check_name,
             url=self.status_url,
         )
-        return TaskResults(success=True, details={})
+        return TaskResults(success=True)
 
 
 @reacts_to(event=PipelineGitlabEvent)
