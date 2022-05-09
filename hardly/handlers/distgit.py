@@ -128,7 +128,11 @@ class DistGitMRHandler(JobHandler):
             self.target_repo_branch
             not in self.packit.dg.local_project.git_project.get_branches()
         ):
-            msg = f"Downstream {self.target_repo}:{self.target_repo_branch} branch does not exist."
+            msg = (
+                "Can't create a dist-git pull/merge request out of this contribution "
+                f"because matching {self.target_repo_branch} branch does not exist "
+                f"in dist-git {self.target_repo} repo."
+            )
             self.project.get_pr(int(self.mr_identifier)).comment(msg)
             logger.info(msg)
             return TaskResults(success=True)
