@@ -6,7 +6,7 @@
   hosts: all
   tasks:
     - name: Install test RPM dependencies
-      dnf:
+      ansible.builtin.dnf:
         name:
           - python3-flexmock
           - python3-pytest

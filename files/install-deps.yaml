@@ -9,7 +9,7 @@
   tasks:
     # - import_tasks: tasks/process-source-branch.yaml
     - name: Install all RPM/python packages needed to run hardly
-      dnf:
+      ansible.builtin.dnf:
         name:
           - centpkg
           - tig # for debugging, can be removed later

@@ -8,12 +8,14 @@ from re import fullmatch
 from typing import Optional
 
 from hardly.handlers.abstract import TaskName
+from ogr.abstract import PullRequest
 from packit.api import PackitAPI
 from packit.config.job_config import JobConfig
 from packit.config.package_config import PackageConfig
 from packit.local_project import LocalProject
 from packit_service.models import PullRequestModel, SourceGitPRDistGitPRModel
 from packit_service.worker.events import MergeRequestGitlabEvent, PipelineGitlabEvent
+from packit_service.worker.events.enums import GitlabEventAction
 from packit_service.worker.events.pagure import PullRequestFlagPagureEvent
 from packit_service.worker.handlers import JobHandler
 from packit_service.worker.handlers.abstract import (
@@ -41,6 +43,7 @@ class DistGitMRHandler(JobHandler):
             job_config=job_config,
             event=event,
         )
+        self.action = event["action"]
         self.mr_identifier = event["identifier"]
         self.mr_title = event["title"]
         self.mr_description = event["description"]
@@ -50,6 +53,60 @@ class DistGitMRHandler(JobHandler):
             f"{event['target_repo_namespace']}/{event['target_repo_name']}"
         )
         self.target_repo_branch = event["target_repo_branch"]
+
+        # lazy
+        self._source_git_pr_model = None
+        self._dist_git_pr_model = None
+        self._dist_git_pr = None
+        self._packit = None
+
+    @property
+    def source_git_pr_model(self) -> PullRequestModel:
+        if not self._source_git_pr_model:
+            self._source_git_pr_model = PullRequestModel.get_or_create(
+                pr_id=self.mr_identifier,
+                namespace=self.project.namespace,
+                repo_name=self.project.repo,
+                project_url=self.project.get_web_url(),
+            )
+        return self._source_git_pr_model
+
+    @property
+    def dist_git_pr_model(self) -> Optional[PullRequestModel]:
+        if not self._dist_git_pr_model:
+            if sg_dg := SourceGitPRDistGitPRModel.get_by_source_git_id(
+                self.source_git_pr_model.id
+            ):
+                self._dist_git_pr_model = sg_dg.dist_git_pull_request
+        return self._dist_git_pr_model
+
+    @property
+    def dist_git_pr(self) -> Optional[PullRequest]:
+        if not self._dist_git_pr and self.dist_git_pr_model:
+            dist_git_project = self.service_config.get_project(
+                url=self.dist_git_pr_model.project.project_url
+            )
+            self._dist_git_pr = dist_git_project.get_pr(self.dist_git_pr_model.pr_id)
+        return self._dist_git_pr
+
+    @property
+    def packit(self) -> PackitAPI:
+        if not self._packit:
+            source_project = self.service_config.get_project(
+                url=self.source_project_url
+            )
+            local_project = LocalProject(
+                git_project=source_project,
+                ref=self.data.commit_sha,
+                working_dir=self.service_config.command_handler_work_dir,
+            )
+
+            self._packit = PackitAPI(
+                config=self.service_config,
+                package_config=self.package_config,
+                upstream_local_project=local_project,
+            )
+        return self._packit
 
     def run(self) -> TaskResults:
         """
@@ -61,26 +118,44 @@ class DistGitMRHandler(JobHandler):
                 "Not creating a dist-git MR from "
                 f"{self.target_repo}:{self.target_repo_branch}"
             )
-            return TaskResults(success=True, details={})
+            return TaskResults(success=True)
 
         if not self.package_config:
             logger.debug("No package config found.")
-            return TaskResults(success=True, details={})
+            return TaskResults(success=True)
 
-        logger.debug(f"About to create a dist-git MR from source-git MR {self.mr_url}")
+        if (
+            self.target_repo_branch
+            not in self.packit.dg.local_project.git_project.get_branches()
+        ):
+            msg = (
+                "Can't create a dist-git pull/merge request out of this contribution "
+                f"because matching {self.target_repo_branch} branch does not exist "
+                f"in dist-git {self.target_repo} repo."
+            )
+            self.project.get_pr(int(self.mr_identifier)).comment(msg)
+            logger.info(msg)
+            return TaskResults(success=True)
 
-        source_project = self.service_config.get_project(url=self.source_project_url)
-        self.local_project = LocalProject(
-            git_project=source_project,
-            ref=self.data.commit_sha,
-            working_dir=self.service_config.command_handler_work_dir,
-        )
+        if self.dist_git_pr_model:
+            logger.info(
+                f"{self.source_git_pr_model} already has corresponding {self.dist_git_pr_model}"
+            )
+            if self.dist_git_pr:
+                if self.action == GitlabEventAction.closed.value:
+                    msg = f"[Source-git MR]({self.mr_url}) has been closed."
+                    self.dist_git_pr.close()
+                elif self.action == GitlabEventAction.reopen.value:
+                    msg = f"[Source-git MR]({self.mr_url}) has been reopened."
+                    # https://github.com/packit/ogr/pull/714
+                    # self.dist_git_pr.reopen()
+                else:
+                    logger.error(f"Unknown action {self.action}")
+                    return TaskResults(success=False)
+                logger.info(msg)
+                self.dist_git_pr.comment(msg)
+            return TaskResults(success=True)
 
-        self.api = PackitAPI(
-            config=self.service_config,
-            package_config=self.package_config,
-            upstream_local_project=self.local_project,
-        )
         dg_mr_info = f"""###### Info for package maintainer
 This MR has been automatically created from
 [this source-git MR]({self.mr_url})."""
@@ -89,34 +164,18 @@ This MR has been automatically created from
 Please review the contribution and once you are comfortable with the content,
 you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
 
-        if (
-            self.target_repo_branch
-            in self.api.dg.local_project.git_project.get_branches()
+        logger.info(f"About to create a dist-git MR from source-git MR {self.mr_url}")
+        if dg_mr := self.packit.sync_release(
+            dist_git_branch=self.target_repo_branch,
+            version=self.packit.up.get_specfile_version(),
+            add_new_sources=False,
+            title=self.mr_title,
+            description=f"{self.mr_description}\n\n---\n{dg_mr_info}",
+            sync_default_files=False,
+            # we rely on this in PipelineHandler below
+            local_pr_branch_suffix=f"src-{self.mr_identifier}",
+            mark_commit_origin=True,
         ):
-            dist_git_branch = self.target_repo_branch
-        else:
-            msg = f"""
-Downstream {self.target_repo}:{self.target_repo_branch} branch does not exist.
-"""
-            self.project.get_pr(int(self.mr_identifier)).comment(msg)
-            logger.debug(msg)
-            dist_git_branch = None
-
-        dg_mr = None
-        if dist_git_branch:
-            dg_mr = self.api.sync_release(
-                dist_git_branch=dist_git_branch,
-                version=self.api.up.get_specfile_version(),
-                add_new_sources=False,
-                title=self.mr_title,
-                description=f"{self.mr_description}\n\n---\n{dg_mr_info}",
-                sync_default_files=False,
-                # we rely on this in PipelineHandler below
-                local_pr_branch_suffix=f"src-{self.mr_identifier}",
-                mark_commit_origin=True,
-            )
-
-        if dg_mr:
             comment = f"""[Dist-git MR #{dg_mr.id}]({dg_mr.url})
 has been created for sake of triggering the downstream checks.
 It ensures that your contribution is valid and can be incorporated in
@@ -181,12 +240,12 @@ class SyncFromDistGitPRHandler(JobHandler):
         """
         if not (dist_git_pr_model := self.dist_git_pr_model()):
             logger.debug("No dist-git PR model.")
-            return TaskResults(success=True, details={})
+            return TaskResults(success=True)
         if not (
             sg_dg := SourceGitPRDistGitPRModel.get_by_dist_git_id(dist_git_pr_model.id)
         ):
             logger.debug(f"Source-git PR for {dist_git_pr_model} not found.")
-            return TaskResults(success=True, details={})
+            return TaskResults(success=True)
 
         source_git_pr_model = sg_dg.source_git_pull_request
         source_git_project = self.service_config.get_project(
@@ -214,7 +273,7 @@ class SyncFromDistGitPRHandler(JobHandler):
             check_name=self.status_check_name,
             url=self.status_url,
         )
-        return TaskResults(success=True, details={})
+        return TaskResults(success=True)
 
 
 @reacts_to(event=PipelineGitlabEvent)
