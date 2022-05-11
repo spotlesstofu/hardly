@@ -118,6 +118,7 @@ class DistGitMRHandler(JobHandler):
             f"{self.source_git_pr_model} already has corresponding {self.dist_git_pr_model}"
         )
         if self.dist_git_pr:
+            msg = ""
             if self.action == GitlabEventAction.closed.value:
                 msg = f"[Source-git MR]({self.mr_url}) has been closed."
                 self.dist_git_pr.close()
@@ -125,8 +126,14 @@ class DistGitMRHandler(JobHandler):
                 msg = f"[Source-git MR]({self.mr_url}) has been reopened."
                 # https://github.com/packit/ogr/pull/714
                 # self.dist_git_pr.reopen()
-            else:
-                logger.error(f"Unknown action {self.action}")
+            elif self.action == GitlabEventAction.update.value:
+                msg = f"[Source-git MR]({self.mr_url}) has been updated."
+                # TODO: update the dist-git PR?
+            elif self.action == GitlabEventAction.opened.value:
+                # Are you trying to re-send a webhook payload to the endpoint manually?
+                # If so and you expect a new dist-git PR being opened, you first
+                # have to remove the old relation from db.
+                logger.error(f"[Source-git MR]({self.mr_url}) opened. (again???)")
                 return False
             logger.info(msg)
             self.dist_git_pr.comment(msg)
