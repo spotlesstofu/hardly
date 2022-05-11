@@ -108,6 +108,30 @@ class DistGitMRHandler(JobHandler):
             )
         return self._packit
 
+    def handle_existing_dist_git_pr(self) -> bool:
+        """Sync changes in source-git PR to already existing dist-git PR.
+
+        Returns:
+            was the sync successful
+        """
+        logger.info(
+            f"{self.source_git_pr_model} already has corresponding {self.dist_git_pr_model}"
+        )
+        if self.dist_git_pr:
+            if self.action == GitlabEventAction.closed.value:
+                msg = f"[Source-git MR]({self.mr_url}) has been closed."
+                self.dist_git_pr.close()
+            elif self.action == GitlabEventAction.reopen.value:
+                msg = f"[Source-git MR]({self.mr_url}) has been reopened."
+                # https://github.com/packit/ogr/pull/714
+                # self.dist_git_pr.reopen()
+            else:
+                logger.error(f"Unknown action {self.action}")
+                return False
+            logger.info(msg)
+            self.dist_git_pr.comment(msg)
+        return True
+
     def run(self) -> TaskResults:
         """
         If user creates a merge-request on the source-git repository,
@@ -115,10 +139,13 @@ class DistGitMRHandler(JobHandler):
         """
         if not self.handle_target():
             logger.debug(
-                "Not creating a dist-git MR from "
+                "Not creating/updating a dist-git MR from "
                 f"{self.target_repo}:{self.target_repo_branch}"
             )
             return TaskResults(success=True)
+
+        if self.dist_git_pr_model:
+            return TaskResults(success=self.handle_existing_dist_git_pr())
 
         if not self.package_config:
             logger.debug("No package config found.")
@@ -135,25 +162,6 @@ class DistGitMRHandler(JobHandler):
             )
             self.project.get_pr(int(self.mr_identifier)).comment(msg)
             logger.info(msg)
-            return TaskResults(success=True)
-
-        if self.dist_git_pr_model:
-            logger.info(
-                f"{self.source_git_pr_model} already has corresponding {self.dist_git_pr_model}"
-            )
-            if self.dist_git_pr:
-                if self.action == GitlabEventAction.closed.value:
-                    msg = f"[Source-git MR]({self.mr_url}) has been closed."
-                    self.dist_git_pr.close()
-                elif self.action == GitlabEventAction.reopen.value:
-                    msg = f"[Source-git MR]({self.mr_url}) has been reopened."
-                    # https://github.com/packit/ogr/pull/714
-                    # self.dist_git_pr.reopen()
-                else:
-                    logger.error(f"Unknown action {self.action}")
-                    return TaskResults(success=False)
-                logger.info(msg)
-                self.dist_git_pr.comment(msg)
             return TaskResults(success=True)
 
         dg_mr_info = f"""###### Info for package maintainer
