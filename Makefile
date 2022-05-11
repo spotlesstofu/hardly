@@ -47,7 +47,6 @@ check-in-container:
 		--env COV_REPORT \
 		--env TEST_TARGET \
 		--env COLOR \
-		-v $(CURDIR):/src \
+		-v $(CURDIR):/src:Z \
 		-w /src \
-		--security-opt label=disable \
 		$(TEST_IMAGE) make check "TEST_TARGET=$(TEST_TARGET)"
