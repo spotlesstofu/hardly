@@ -101,7 +101,12 @@ def test_dist_git_mr(
     ).and_return(None)
 
     lp = flexmock(
-        LocalProject, refresh_the_arguments=lambda: None, checkout_ref=lambda ref: None
+        LocalProject,
+        refresh_the_arguments=lambda: None,
+        checkout_ref=lambda ref: None,
+    )
+    lp.should_receive("fetch").with_args(
+        "https://gitlab.com/packit-service/src/open-vm-tools"
     )
     flexmock(PagureProject).should_receive("get_branches").and_return(
         downstream_branches
