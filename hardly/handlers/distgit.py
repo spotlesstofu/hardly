@@ -100,6 +100,9 @@ class DistGitMRHandler(JobHandler):
                 ref=self.data.commit_sha,
                 working_dir=self.service_config.command_handler_work_dir,
             )
+            # We need to fetch tags from the upstream source-git repo
+            # Details: https://github.com/packit/hardly/issues/61
+            local_project.fetch(self.project.get_web_url())
 
             self._packit = PackitAPI(
                 config=self.service_config,
