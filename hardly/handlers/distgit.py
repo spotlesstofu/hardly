@@ -102,7 +102,7 @@ class DistGitMRHandler(JobHandler):
             )
             # We need to fetch tags from the upstream source-git repo
             # Details: https://github.com/packit/hardly/issues/61
-            local_project.fetch(self.project.get_web_url())
+            local_project.fetch(self.project.get_web_url(), force=True)
 
             self._packit = PackitAPI(
                 config=self.service_config,

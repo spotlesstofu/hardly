@@ -106,7 +106,7 @@ def test_dist_git_mr(
         checkout_ref=lambda ref: None,
     )
     lp.should_receive("fetch").with_args(
-        "https://gitlab.com/packit-service/src/open-vm-tools"
+        "https://gitlab.com/packit-service/src/open-vm-tools", force=True
     )
     flexmock(PagureProject).should_receive("get_branches").and_return(
         downstream_branches

@@ -24,7 +24,7 @@ but is expected to eventually follow [this workflow](https://github.com/packit/r
 ##### Should have:
 
 - [ ] If the source-git merge-request is updated, update the dist-git merge-request.
-- [ ] If the source-git merge-request is closed, close the dist-git merge-request.
+- [x] If the source-git merge-request is closed, close the dist-git merge-request.
 
 ##### Could have:
 
