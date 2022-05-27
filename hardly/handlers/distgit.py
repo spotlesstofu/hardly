@@ -27,6 +27,25 @@ from packit_service.worker.result import TaskResults
 logger = getLogger(__name__)
 
 
+def fix_bz_refs(message: str) -> str:
+    """Convert Bugzilla references to the format accepted by BZ checks
+
+    From
+        Bugzilla: <bzid or bzlin>
+    to
+        Resolves: bz#<bzid>
+
+    Args:
+        message: Multiline string in which Bugzilla references are converted.
+
+    Returns:
+        Multiline string with BZ refs in the required format.
+    """
+    pattern = r"^Bugzilla: +(https://.+id=)?(\d+)"
+    repl = r"Resolves: bz#\2"
+    return re.sub(pattern, repl, message, flags=re.MULTILINE)
+
+
 # @configured_as(job_type=JobType.dist_git_pr)  # Requires a change in packit
 @reacts_to(event=MergeRequestGitlabEvent)
 class DistGitMRHandler(JobHandler):
@@ -183,12 +202,13 @@ Please review the contribution and once you are comfortable with the content,
 you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
 
         logger.info(f"About to create a dist-git MR from source-git MR {self.mr_url}")
+
         if dg_mr := self.packit.sync_release(
             dist_git_branch=self.target_repo_branch,
             version=self.packit.up.get_specfile_version(),
             add_new_sources=False,
             title=self.mr_title,
-            description=f"{self.mr_description}\n\n---\n{dg_mr_info}",
+            description=f"{fix_bz_refs(self.mr_description)}\n\n---\n{dg_mr_info}",
             sync_default_files=False,
             # we rely on this in PipelineHandler below
             local_pr_branch_suffix=f"src-{self.mr_identifier}",
