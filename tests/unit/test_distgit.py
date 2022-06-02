@@ -4,7 +4,7 @@
 import pytest
 
 from flexmock import flexmock
-from hardly.handlers.distgit import DistGitMRHandler
+from hardly.handlers.distgit import DistGitMRHandler, fix_bz_refs
 
 
 @pytest.mark.parametrize(
@@ -69,3 +69,33 @@ def test_handle_target(targets_handled, target_repo, target_branch, handled):
         target_repo_branch=target_branch,
     )
     assert DistGitMRHandler.handle_target(mock_mr_handler) == handled
+
+
+def test_fix_bz_refs():
+    inputstr = """Do a clever change
+
+Bugzilla:   https://bugzilla.redhat.com/show_bug.cgi?id=809123
+Bugzilla: 456789
+Bugzilla: 23456 (Some explanation)
+
+    Bugzilla: 09876
+bugzilla: 98765
+Bugzilla:https://bugzilla.redhat.com/show_bug.cgi?id=87654
+This is a Bugzilla: an ugly one.
+
+Resolves: #1234
+"""
+    outputstr = """Do a clever change
+
+Resolves: bz#809123
+Resolves: bz#456789
+Resolves: bz#23456 (Some explanation)
+
+    Bugzilla: 09876
+bugzilla: 98765
+Bugzilla:https://bugzilla.redhat.com/show_bug.cgi?id=87654
+This is a Bugzilla: an ugly one.
+
+Resolves: #1234
+"""
+    assert fix_bz_refs(inputstr) == outputstr
