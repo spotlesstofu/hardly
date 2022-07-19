@@ -354,10 +354,12 @@ class SyncFromGitlabMRHandler(SyncFromDistGitPRHandler):
 
     def dist_git_pr_model(self) -> Optional[PullRequestModel]:
         if self.source == "merge_request_event":
+            if not self.merge_request_url:
+                logger.debug(f"No merge_request_url in {self.data.event_dict}")
+                return None
             # Derive project from merge_request_url because
             # self.project can be either source or target
-            m = fullmatch(r"(\S+)/-/merge_requests/(\d+)", self.merge_request_url)
-            if m:
+            if m := fullmatch(r"(\S+)/-/merge_requests/(\d+)", self.merge_request_url):
                 project = self.service_config.get_project(url=m[1])
                 return PullRequestModel.get_or_create(
                     pr_id=int(m[2]),
