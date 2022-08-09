@@ -129,7 +129,7 @@ def test_dist_git_mr(
                 version=version,
                 add_new_sources=False,
                 title="Yet another testing MR",
-                description="""DnD RpcV3: A corrupted packet received may result in an out of bounds (OOB)
+                description="""DnD RpcV3: A corrupted packet received may result in an OOB
 memory access if the length of the message received is less than the size
 of the expected packet header.
 
