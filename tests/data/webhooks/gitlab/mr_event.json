@@ -30,7 +30,7 @@
     "assignee_id": null,
     "author_id": 2952463,
     "created_at": "2021-08-02 14:36:37 UTC",
-    "description": "DnD RpcV3: A corrupted packet received may result in an out of bounds (OOB)\nmemory access if the length of the message received is less than the size\nof the expected packet header.",
+    "description": "DnD RpcV3: A corrupted packet received may result in an OOB\nmemory access if the length of the message received is less than the size\nof the expected packet header.",
     "head_pipeline_id": null,
     "id": 110651803,
     "iid": 5,
@@ -93,7 +93,7 @@
     },
     "last_commit": {
       "id": "6b7ede26456bb7fbcc3d1760d43f59a8f4ca7369",
-      "message": "Add check that the packet size received is >= expected packet header size.\n\nDnD RpcV3: A corrupted packet received may result in an out of bounds (OOB)\nmemory access if the length of the message received is less than the size\nof the expected packet header.\n",
+      "message": "Add check that the packet size received is >= expected packet header size.\n\nDnD RpcV3: A corrupted packet received may result in an OOB\nmemory access if the length of the message received is less than the size\nof the expected packet header.\n",
       "title": "Add check that the packet size received is >= expected packet header size.",
       "timestamp": "2021-08-02T10:33:26+02:00",
       "url": "https://gitlab.com/packit-service/src/open-vm-tools/-/commit/6b7ede26456bb7fbcc3d1760d43f59a8f4ca7369",
