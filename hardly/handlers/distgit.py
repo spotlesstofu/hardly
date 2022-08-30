@@ -72,6 +72,7 @@ class DistGitMRHandler(JobHandler):
             f"{event['target_repo_namespace']}/{event['target_repo_name']}"
         )
         self.target_repo_branch = event["target_repo_branch"]
+        self.oldrev = event["oldrev"]
 
         # lazy
         self._source_git_pr_model = None
@@ -130,6 +131,27 @@ class DistGitMRHandler(JobHandler):
             )
         return self._packit
 
+    def sync_release(self):
+        dg_mr_info = f"""###### Info for package maintainer
+This MR has been automatically created from
+[this source-git MR]({self.mr_url})."""
+        if getenv("PROJECT", "").startswith("stream"):
+            dg_mr_info += """
+Please review the contribution and once you are comfortable with the content,
+you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
+
+        return self.packit.sync_release(
+            dist_git_branch=self.target_repo_branch,
+            version=self.packit.up.get_specfile_version(),
+            add_new_sources=False,
+            title=self.mr_title,
+            description=f"{fix_bz_refs(self.mr_description)}\n\n---\n{dg_mr_info}",
+            sync_default_files=False,
+            # we rely on this in PipelineHandler below
+            local_pr_branch_suffix=f"src-{self.mr_identifier}",
+            mark_commit_origin=True,
+        )
+
     def handle_existing_dist_git_pr(self) -> bool:
         """Sync changes in source-git PR to already existing dist-git PR.
 
@@ -150,7 +172,9 @@ class DistGitMRHandler(JobHandler):
                 # self.dist_git_pr.reopen()
             elif self.action == GitlabEventAction.update.value:
                 msg = f"[Source-git MR]({self.mr_url}) has been updated."
-                # TODO: update the dist-git PR?
+                # update the dist-git PR if there are code changes
+                if self.oldrev:
+                    self.sync_release()
             elif self.action == GitlabEventAction.opened.value:
                 # Are you trying to re-send a webhook payload to the endpoint manually?
                 # If so and you expect a new dist-git PR being opened, you first
@@ -193,27 +217,9 @@ class DistGitMRHandler(JobHandler):
             logger.info(msg)
             return TaskResults(success=True)
 
-        dg_mr_info = f"""###### Info for package maintainer
-This MR has been automatically created from
-[this source-git MR]({self.mr_url})."""
-        if getenv("PROJECT", "").startswith("stream"):
-            dg_mr_info += """
-Please review the contribution and once you are comfortable with the content,
-you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
-
         logger.info(f"About to create a dist-git MR from source-git MR {self.mr_url}")
 
-        if dg_mr := self.packit.sync_release(
-            dist_git_branch=self.target_repo_branch,
-            version=self.packit.up.get_specfile_version(),
-            add_new_sources=False,
-            title=self.mr_title,
-            description=f"{fix_bz_refs(self.mr_description)}\n\n---\n{dg_mr_info}",
-            sync_default_files=False,
-            # we rely on this in PipelineHandler below
-            local_pr_branch_suffix=f"src-{self.mr_identifier}",
-            mark_commit_origin=True,
-        ):
+        if dg_mr := self.sync_release():
             comment = f"""[Dist-git MR #{dg_mr.id}]({dg_mr.url})
 has been created for sake of triggering the downstream checks.
 It ensures that your contribution is valid and can be incorporated in
