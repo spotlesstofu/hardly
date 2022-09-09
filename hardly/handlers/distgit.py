@@ -131,7 +131,7 @@ class DistGitMRHandler(JobHandler):
             )
         return self._packit
 
-    def sync_release(self):
+    def sync_release(self, **kwargs):
         dg_mr_info = f"""###### Info for package maintainer
 This MR has been automatically created from
 [this source-git MR]({self.mr_url})."""
@@ -150,6 +150,7 @@ you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
             # we rely on this in PipelineHandler below
             local_pr_branch_suffix=f"src-{self.mr_identifier}",
             mark_commit_origin=True,
+            **kwargs,
         )
 
     def handle_existing_dist_git_pr(self) -> bool:
@@ -174,7 +175,7 @@ you should trigger a CI pipeline run via `Pipelines → Run pipeline`."""
                 msg = f"[Source-git MR]({self.mr_url}) has been updated."
                 # update the dist-git PR if there are code changes
                 if self.oldrev:
-                    self.sync_release()
+                    self.sync_release(update_pr=True)
             elif self.action == GitlabEventAction.opened.value:
                 # Are you trying to re-send a webhook payload to the endpoint manually?
                 # If so and you expect a new dist-git PR being opened, you first
